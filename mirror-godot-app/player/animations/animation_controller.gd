@@ -81,8 +81,12 @@ func setup(player: Player) -> void:
 func _process(delta: float) -> void:
 	if not is_instance_valid(_player):
 		return
+	if not _player._lumina_guard("model.frame_entry", {"model": global_transform, "positive_scale": scale_multiplier, "movement_delta": movement_delta, "accumulated_delta": accumulated_delta, "initial_location": initial_location, "target_location": target_location, "look_target": _look_target, "initial_look_target": initial_look_target, "target_look_target": target_look_target}):
+		return
 
 	_process_model_interpolation(delta)
+	if not _player._lumina_guard("model.interpolation_result", {"model": global_transform}):
+		return
 
 	_set_animation(delta)
 	if not _skeleton:
@@ -113,6 +117,9 @@ func _process_model_interpolation(delta):
 
 
 func update_character_status(in_movement_delta: float, location: Vector3, in_horizontal_rotation: float, in_vertical_rotation: float):
+	var diagnostic_player = _player if is_instance_valid(_player) else get_parent()
+	if diagnostic_player is Player and not diagnostic_player._lumina_guard("model.update_status", {"model": global_transform, "camera": diagnostic_player.get_head_global_transform(), "positive_scale": scale_multiplier, "delta": in_movement_delta, "location": location, "yaw": in_horizontal_rotation, "pitch": in_vertical_rotation}):
+		return
 	# Clamp is needed to avoid overshot that would cause the character body to flip upside down.
 	in_vertical_rotation = clamp(in_vertical_rotation, -(PI - (PI * 0.6)), PI - (PI * 0.6))
 

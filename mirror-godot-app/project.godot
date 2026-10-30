@@ -118,6 +118,7 @@ GameplayTools="*res://prefabs/autoload/gameplay_tools/gameplay_tools.tscn"
 DebugGeometry="*res://addons/debug_geometry.gd"
 MirrorScriptServer="*res://script/mirror_script_server.gd"
 Util="*res://scripts/autoload/util_funcs.gd"
+LuminaBridge="*res://scripts/autoload/lumina_bridge.gd"
 
 [debug]
 

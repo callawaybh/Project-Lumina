@@ -9,7 +9,8 @@ import {
 import {
   MessageBody,
   SubscribeMessage,
-  WebSocketGateway
+  WebSocketGateway,
+  WsException
 } from '@nestjs/websockets'
 import { GodotSocketExceptionFilter } from '../godot-server/godot-socket-exception.filter'
 import { GodotSocketInterceptor } from '../godot-server/godot-socket.interceptor'
@@ -18,6 +19,8 @@ import { ZoneService } from './zone.service'
 import { UserId } from '../util/mongo-object-id-helpers'
 import { AdminTokenWS } from '../godot-server/get-user-ws.decorator'
 import { WsAuthGuard } from '../godot-server/ws-auth.guard'
+import { UserService } from '../user/user.service'
+import { isMongoId } from 'class-validator'
 
 enum ZoneMessage {
   UPDATE_STATUS = 'zone_update_status'
@@ -31,11 +34,25 @@ export class ZoneGateway {
   constructor(
     private readonly zoneService: ZoneService,
     private readonly vmScalerService: SpaceManagerExternalService,
-    private readonly logger: Logger
+    private readonly logger: Logger,
+    private readonly userService: UserService
   ) {}
 
   private readonly secondsEmptyUntilShutdown = 600
   private readonly minimumUuidLength = 16
+
+  @SubscribeMessage('zone_get_user')
+  public async getPublicUser(@MessageBody('id') id: string) {
+    if (typeof id !== 'string' || !isMongoId(id)) {
+      throw new WsException('Invalid user ID')
+    }
+    // Match the public REST profile; never expose private/admin user fields.
+    const profile = await this.userService.findPublicUser(id)
+    if (!profile) {
+      throw new WsException('User not found')
+    }
+    return profile
+  }
 
   @SubscribeMessage(ZoneMessage.UPDATE_STATUS)
   public async updateStatus(
@@ -91,7 +108,10 @@ export class ZoneGateway {
         }
         return {}
       }
-      return
+      // Authenticated personal/local hosts do not manage cloud zone records.
+      // Still acknowledge their heartbeat: the socket interceptor requires an
+      // object response, and destructuring undefined otherwise becomes a 404.
+      return {}
     } catch (error) {
       this.logger.error(error, ZoneGateway.name)
       return {}

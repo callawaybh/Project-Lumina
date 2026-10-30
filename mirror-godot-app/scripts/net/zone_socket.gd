@@ -38,6 +38,7 @@ signal material_instance_updated(material: Dictionary)
 signal material_instance_deleted(material: Dictionary)
 
 const ZONE_GET_ASSET = "zone_get_asset"
+const ZONE_GET_USER = "zone_get_user"
 const ZONE_GET_SPACE = "zone_get_space"
 const ZONE_GET_SPACE_VERSION = "zone_get_space_version"
 const ZONE_GET_TERRAIN = "zone_get_terrain"
@@ -215,6 +216,14 @@ func _process_request_queue() -> void:
 
 func _should_try_reconnect() -> bool:
 	return _next_reconnect_time > 0 and Time.get_ticks_msec() > _next_reconnect_time
+
+
+func get_user(user_id: String) -> Promise:
+	var promise := Promise.new()
+	var event_id: String = UUID.generate_guid()
+	_requests.push_back({"event": ZONE_GET_USER, "data": {"id": user_id, "eventId": event_id}})
+	_request_promise_list[event_id] = promise
+	return promise
 
 
 func get_space(space_id: String) -> Promise:
@@ -518,12 +527,16 @@ func _handle_websocket_message(request: Dictionary) -> void:
 	var json_result = request["json_result"]
 	if json_result == null:
 		request_errored.emit(request)
-		if request["event"] in [ZONE_GET_ASSET, ZONE_GET_SPACE, ZONE_GET_SPACE_VERSION]:
+		if request["event"] in [ZONE_GET_ASSET, ZONE_GET_SPACE, ZONE_GET_SPACE_VERSION, ZONE_GET_USER]:
 			var event_id = request["data"]["eventId"]
 			_request_promise_list[event_id].set_error(request)
 			_request_promise_list.erase(event_id)
 		return
 	match request["event"]:
+		ZONE_GET_USER:
+			var event_id = request["data"]["eventId"]
+			_request_promise_list[event_id].set_result(json_result)
+			_request_promise_list.erase(event_id)
 		ZONE_GET_ASSET:
 			if _asset_ids_queued.has(request["data"]["id"]):
 				_asset_ids_queued.erase(request["data"]["id"])

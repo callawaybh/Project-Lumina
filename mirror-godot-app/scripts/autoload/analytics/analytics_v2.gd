@@ -23,6 +23,8 @@ func track_event_client(event_type: String, properties:={}) -> void:
 
 ## The primary method used to send an event (warning: doesn't check for server)
 func track_event(event_type: String, properties:={}) -> void:
+	if ProjectSettings.get_setting("mirror/env_name", "") == "local":
+		return
 	if _PRINT_ANALYTICS:
 		print("AnalyticsV2 Track: %s, %s" % [event_type, str(properties)])
 	# Create a new AnalyticsEvent

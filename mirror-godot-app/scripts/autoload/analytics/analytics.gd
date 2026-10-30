@@ -52,6 +52,8 @@ func track_event_client(event_type: String, properties := {}) -> void:
 
 ## The primary method used to send an event from a client
 func track_event(event_type: String, properties := {}) -> void:
+	if ProjectSettings.get_setting("mirror/env_name", "") == "local":
+		return
 	# V2 Analytics call. This v1 class is deprecated
 	AnalyticsV2.track_event(event_type, properties)
 
@@ -67,6 +69,8 @@ func track_event(event_type: String, properties := {}) -> void:
 
 
 func identify_user_email(user_id: String, email: String) -> void:
+	if ProjectSettings.get_setting("mirror/env_name", "") == "local":
+		return
 	# JSON shape: https://posthog.com/docs/api/post-only-endpoints#identify
 	var data = {
 		API_KEY_KEY: api_key,

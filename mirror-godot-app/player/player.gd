@@ -6,6 +6,31 @@ extends TMCharacter3D
 signal camera_zoom_scale_updated(camera_zoom_scale: float)
 
 const SPAWN_RADIUS = 1.5
+const _STATE_DIAGNOSTICS = preload("res://scripts/diagnostics/player_state_diagnostics.gd")
+var _lumina_faulted := false
+var _lumina_history: Array = []
+
+func _lumina_guard(stage: String, values: Dictionary) -> bool:
+	if Engine.is_editor_hint() or ProjectSettings.get_setting("mirror/env_name", "") != "local":
+		return true
+	if _lumina_faulted:
+		return false
+	if _STATE_DIAGNOSTICS.invalid_reason(values).is_empty():
+		_lumina_history.append(_STATE_DIAGNOSTICS.snapshot(stage, values))
+		if _lumina_history.size() > 12:
+			_lumina_history.pop_front()
+		return true
+	_lumina_faulted = true
+	var role := "host" if Zone.is_host() else "client"
+	var report: String = _STATE_DIAGNOSTICS.save_report(self, stage, values, _lumina_history, role)
+	push_error("LUMINA PLAYER FAULT at %s (%s). Session stopped. Diagnostic: %s" % [stage, _STATE_DIAGNOSTICS.invalid_reason(values), report])
+	set_process_mode(Node.PROCESS_MODE_DISABLED)
+	hide()
+	if Zone.is_host():
+		get_tree().quit(2)
+	else:
+		Zone.client.quit(2)
+	return false
 const _CAMERA_MANAGER_SCENE = preload("res://player/cameras/camera_manager.tscn")
 const _VR_CONTROLLER_SCENE = preload("res://player/vr/vr_controller.tscn")
 const _INTERACT_COLOR = Color(0.02, 0.64, 0.7)
@@ -112,6 +137,8 @@ func _setup_synchronizer(local_id) -> void:
 # ------------------------------------------------------------------- Networking
 func _collect_inputs(delta: float, buffer: DataBuffer) -> void:
 	var camera_transform = get_head_global_transform()
+	if not _lumina_guard("collect_inputs.entry", {"body": global_transform, "camera": camera_transform}):
+		return
 	var input_move = camera_transform.basis * get_intended_movement_direction()
 	input_move = Vector2(input_move.x, input_move.z).normalized()
 	var input_run = is_intent_to_run()
@@ -120,6 +147,8 @@ func _collect_inputs(delta: float, buffer: DataBuffer) -> void:
 	var character_head_vertical_rotation = camera_get_rotation().x
 	var look_target = get_look_target()
 	var is_aiming = equipable_controller.is_current_equipable_aiming()
+	if not _lumina_guard("collect_inputs.values", {"move": input_move, "yaw": character_horizontal_rotation, "pitch": character_head_vertical_rotation}):
+		return
 
 	write_pending_interactions_to_buffer(buffer)
 	buffer.add_optional_variant(get_current_seat_path_or_null(), null)
@@ -229,6 +258,8 @@ func _are_inputs_different(inputs_A: DataBuffer, inputs_B: DataBuffer) -> bool:
 
 
 func _controller_process(delta: float, buffer: DataBuffer) -> void:
+	if not _lumina_guard("physics.entry", {"body": global_transform, "velocity": linear_velocity, "positive_delta": delta}):
+		return
 	execute_interactions(buffer)
 	var seat_path = buffer.read_optional_variant(null)
 
@@ -246,6 +277,8 @@ func _controller_process(delta: float, buffer: DataBuffer) -> void:
 	var character_horizontal_rotation = buffer.read_real(_hori_rotation_compression_level)
 	var character_head_vertical_rotation = buffer.read_real(_vert_rotation_compression_level)
 	var is_aiming = buffer.read_bool()
+	if not _lumina_guard("physics.decoded_inputs", {"move": input_move, "yaw": character_horizontal_rotation, "pitch": character_head_vertical_rotation, "vr_position": vr_body_position, "vr_old_position": vr_old_position}):
+		return
 
 	var sitting = seat_path != null and not seat_path.is_empty()
 	var gravity = _gravity if not sitting else 0.0
@@ -256,6 +289,8 @@ func _controller_process(delta: float, buffer: DataBuffer) -> void:
 
 	global_transform.basis = Basis()
 	process_character(delta, input_move, input_run, input_jump, gravity)
+	if not _lumina_guard("physics.native_result", {"body": global_transform, "velocity": linear_velocity}):
+		return
 
 	if not is_dead():
 		_desired_horizontal_rotation = character_horizontal_rotation
@@ -275,6 +310,8 @@ func _controller_process(delta: float, buffer: DataBuffer) -> void:
 
 		room_scale_velocity = (global_transform.basis.inverse() * room_scale_velocity) / 2.0
 		var animation_movement: Vector3 = get_local_movement_velocity() + room_scale_velocity
+		if not _lumina_guard("physics.animation_values", {"body": global_transform, "movement": animation_movement}):
+			return
 		if sitting:
 			var seat_node: Node3D = get_node(seat_path)
 			try_sit_on_seat(seat_node)
@@ -291,10 +328,14 @@ func _controller_process(delta: float, buffer: DataBuffer) -> void:
 
 
 func update_interpolated_node(sync_delta):
+	if not _lumina_guard("network.late_update", {"body": global_transform, "model": model.global_transform, "positive_model_scale": model.scale_multiplier, "delta": sync_delta, "yaw": _desired_horizontal_rotation, "pitch": _desired_vertical_rotation}):
+		return
 	model.update_character_status(sync_delta, global_transform.origin, _desired_horizontal_rotation, _desired_vertical_rotation)
 
 
 func _process(delta: float) -> void:
+	if not _lumina_guard("frame.entry", {"body": global_transform, "velocity": linear_velocity}):
+		return
 	if Zone.is_host(): # server authoratative value
 		if global_transform.origin.y <= _lower_y_limit:
 			damage_handler.damage(1.0, damage_handler.SERVER_ORIGIN)
@@ -358,6 +399,8 @@ func trickled_sync_state_collect(db: DataBuffer, update_rate: float) -> void:
 
 
 func trickled_sync_state_apply(dt: float, alpha: float, db_from: DataBuffer, db_to: DataBuffer) -> void:
+	if not _lumina_guard("network.trickle_entry", {"body": global_transform, "alpha": alpha, "dt": dt}):
+		return
 	notify_received_net_sync_update()
 
 	var old_rotation_y: float = db_from.read_unit_real(_rotation_compression_level) * PI
@@ -384,11 +427,15 @@ func trickled_sync_state_apply(dt: float, alpha: float, db_from: DataBuffer, db_
 	var new_animation_details_dead := db_to.read_bool()
 	var new_animation_details_is_aiming := db_to.read_bool()
 	var new_animation_details_stance := db_to.read_uint(_stance_compression_level)
+	if not _lumina_guard("network.decoded_snapshot", {"old_position": old_position, "new_position": new_position, "positive_old_scale": old_scale, "positive_new_scale": new_scale, "old_yaw": old_rotation_y, "new_yaw": new_rotation_y, "old_pitch": old_rotation_x, "new_pitch": new_rotation_x, "old_velocity": old_animation_details_velocity, "new_velocity": new_animation_details_velocity}):
+		return
 
 	scale = Vector3.ONE * lerp(old_scale, new_scale, alpha)
 	position = lerp(old_position, new_position, alpha)
 	_desired_horizontal_rotation = lerp_angle(old_rotation_y, new_rotation_y, alpha)
 	_desired_vertical_rotation = lerp_angle(old_rotation_x, new_rotation_x, alpha)
+	if not _lumina_guard("network.interpolated_result", {"body": global_transform, "yaw": _desired_horizontal_rotation, "pitch": _desired_vertical_rotation}):
+		return
 
 	# Updates the character location right away. No need to interpolate in this case
 	# because this method is already interpolated.
@@ -522,6 +569,8 @@ func _respawn_player_server() -> void:
 
 @rpc("call_remote", "any_peer", "reliable")
 func _respawn_player_network(spawn_point_path: NodePath, spawn_transform: Transform3D) -> void:
+	if not _lumina_guard("spawn.received", {"spawn": spawn_transform}):
+		return
 	# when we die respawn is called and we must unfreeze the client
 	set_frozen(false)
 	try_get_off_seat()
@@ -531,7 +580,7 @@ func _respawn_player_network(spawn_point_path: NodePath, spawn_transform: Transf
 	if _camera_manager:
 		_camera_manager.reset_camera_transforms(spawn_transform)
 	if not spawn_point_path.is_empty():
-		var spawn_point_node = get_node(spawn_point_path)
+		var spawn_point_node = get_node_or_null(spawn_point_path)
 		if spawn_point_node:
 			spawn_point_node.emit_signal("player_spawned_here", self)
 	Zone.social_manager.player_spawned.emit(self)
@@ -540,10 +589,14 @@ func _respawn_player_network(spawn_point_path: NodePath, spawn_transform: Transf
 
 func _calculate_spawn_transform(spawn_point_path: NodePath) -> Transform3D:
 	var spawn_transform := Transform3D.IDENTITY
-	# TODO: spawn_point_path can be null if object not ready
-	var spawn_point_node: Node3D = get_node(spawn_point_path)
+	# Maps without spawn markers intentionally return an empty path.
+	var spawn_point_node: Node3D = null
+	if not spawn_point_path.is_empty():
+		spawn_point_node = get_node_or_null(spawn_point_path) as Node3D
 	if spawn_point_node:
 		spawn_transform = spawn_point_node.global_transform
+	if not _lumina_guard("spawn.marker", {"spawn": spawn_transform}):
+		return Transform3D.IDENTITY
 	spawn_transform.origin = spawn_transform * _random_point_in_circle_vec3(SPAWN_RADIUS)
 	# Our player controller must remain upright and does not support non-uniform scaling.
 	var rot = Basis.from_euler(Vector3(0.0, spawn_transform.basis.get_euler().y, 0.0))
@@ -553,6 +606,8 @@ func _calculate_spawn_transform(spawn_point_path: NodePath) -> Transform3D:
 
 @rpc("call_local", "any_peer", "reliable")
 func teleport(destination: Vector3, orientation: Vector3 = Vector3.ZERO) -> void:
+	if not _lumina_guard("teleport.received", {"destination": destination, "orientation": orientation, "body": global_transform}):
+		return
 	try_get_off_seat()
 	position = destination
 	orientation = get_model_rotation_euler() if orientation == Vector3.ZERO else orientation

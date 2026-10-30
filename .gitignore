@@ -16,3 +16,9 @@ node_modules
 *.app/
 *.app.zip
 .vercel
+
+# Local developer bridge requests and responses
+.lumina-bridge/
+__pycache__/
+*.pyc
+/mirror-web-server/localStorage/

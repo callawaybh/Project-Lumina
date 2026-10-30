@@ -55,6 +55,10 @@ func logout_reset_current_user_profile() -> void:
 ## If the user profile is already in memory,
 ## the success signal is called automatically.
 func get_user_profile(uid: String) -> Promise:
+	if Zone.is_host():
+		var promise: Promise = Net.zone_socket.get_user(uid)
+		promise.connect_func_to_fulfill(_host_profile_received.bind(promise))
+		return promise
 	# cache causes avatar loading issues so we disabled the cache
 	# the user profile cannot be cached unless we can expire it on all clients and the server
 	# in the meantime its better to leave a comment
@@ -63,6 +67,11 @@ func get_user_profile(uid: String) -> Promise:
 	#	promise_fulfilled.set_result(user_profiles[uid])
 	#	return promise_fulfilled
 	return self.get_request(GET_USER, "/user/id/%s" % uid)
+
+
+func _host_profile_received(promise: Promise) -> void:
+	if not promise.is_error():
+		_refresh_profile(promise.get_result())
 
 
 ## Get the user's private profile

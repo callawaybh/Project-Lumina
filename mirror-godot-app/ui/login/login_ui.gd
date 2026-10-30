@@ -48,14 +48,32 @@ func start_login_ui() -> void:
 	Firebase.Auth.userdata_received.connect(Net.user_client._firebase_auth_userdata_received)
 	Firebase.Auth.logged_out.connect(_logged_out)
 	Deeplinking.join_authed_space.connect(_deeplink_login_as_user)
-	if Firebase.Auth.check_auth_file() and not Deeplinking.has_join_command_with_auth():
+	if not Deeplinking.has_join_command_with_auth() and await _refresh_saved_login():
 		var mirror_profile: Dictionary = await get_latest_mirror_profile_or_create_it()
 		if mirror_profile.has("error"):
 			Notify.error(tr("Login Failed"), mirror_profile.error)
-			Firebase.Auth.remove_auth()
-			Firebase.Auth.logout()
 			return
 		_fully_log_in_user(mirror_profile, Firebase.Auth.auth)
+
+
+func _refresh_saved_login() -> bool:
+	# Loading starts a request; the stored ID token may already have expired.
+	var outcome := {"done": false, "ok": false}
+	var refreshed := func(_auth):
+		outcome.done = true
+		outcome.ok = true
+	var failed := func(_code, _message): outcome.done = true
+	Firebase.Auth.token_refresh_succeeded.connect(refreshed)
+	Firebase.Auth.login_failed.connect(failed)
+	var found: bool = Firebase.Auth.check_auth_file()
+	var deadline := Time.get_ticks_msec() + 20000
+	while found and not outcome.done and Time.get_ticks_msec() < deadline:
+		await get_tree().process_frame
+	Firebase.Auth.token_refresh_succeeded.disconnect(refreshed)
+	Firebase.Auth.login_failed.disconnect(failed)
+	if found and not outcome.done:
+		Notify.error(tr("Login Failed"), tr("Saved sign-in refresh timed out. Please retry when connected."))
+	return found and outcome.ok
 
 
 func login_game_server_to_backend(access_token: String, refresh_token: String, space_id: String):
@@ -94,7 +112,7 @@ func get_latest_mirror_profile_or_create_it() -> Dictionary:
 	var account_promise = Net.mirror_auth_client.create_account_if_missing()
 	var mirror_profile = await account_promise.wait_till_fulfilled()
 	if account_promise.is_error():
-		return { "error: " : account_promise.get_error_message() }
+		return { "error" : account_promise.get_error_message() }
 	return mirror_profile
 
 
@@ -164,8 +182,9 @@ func _on_login_succeeded(auth_result: Dictionary) -> void:
 	if account_promise.is_error():
 		push_error("Failed to get profile from server: ", account_promise.get_error_message())
 		Notify.error(tr("Login Failed"), tr(account_promise.get_error_message()))
-		Firebase.Auth.remove_auth()
-		Firebase.Auth.logout()
+		# A backend outage must not erase a previously saved Firebase session.
+		_connect_popup.hide()
+		_sign_in_menu.show()
 		busy = false
 		return
 
