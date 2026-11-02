@@ -194,6 +194,23 @@ export class UserService {
     try {
       const decodedToken = await this.firebaseAuthService.verifyIdToken(token)
       const firebaseUID = decodedToken.uid
+      if (decodedToken.lumina_local_dev === true) {
+        const existing = await this.userModel.findOne({
+          _id: firebaseUID, firebaseUID, deleted: { $ne: true }
+        }).exec()
+        if (existing) return existing
+        if (decodedToken.lumina_local_dev_provision !== true ||
+            await this.userModel.exists({ _id: firebaseUID })) {
+          throw new NotFoundException('Configured local profile not found')
+        }
+        // Only an explicitly configured test identity can provision its own profile.
+        return await this.userModel.findOneAndUpdate(
+          { _id: firebaseUID, firebaseUID },
+          { $setOnInsert: { displayName: decodedToken.lumina_local_dev_name,
+              emailVerified: false } },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        ).exec()
+      }
 
       const _id = new mongo.ObjectId()
 

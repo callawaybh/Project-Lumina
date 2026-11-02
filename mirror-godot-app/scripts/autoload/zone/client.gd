@@ -172,8 +172,8 @@ func _client_on_connected_to_server() -> void:
 	client.set_name("Client " + str(multiplayer.get_unique_id()))
 	Zone.add_child(client)
 
-	var jwt = Firebase.Auth.get_jwt()
-	var user_id = JWT.get_user_id_from_jwt(jwt, "test123")
+	var jwt = Net.get_auth_token()
+	var user_id = Net.get_user_id_from_auth_token(jwt)
 	var client_version: String = str(Util.get_version_string())
 	Zone.send_data_to_server([Packet.TYPE.CLIENT_INIT, jwt, client_version])
 	PlayerData.acknowledge_local_user_id(user_id)
@@ -233,6 +233,8 @@ func access_denied(in_reason: int) -> void:
 	Zone.on_exit_space()
 	GameUI.instance.loading_ui.hide()
 	quit_to_main_menu()
+	if in_reason == Zone.DENIED_REASON.AUTHENTICATION_FAILED:
+		Game.critical_error(JOINER_ERRORS.ACCESS_DENIED, "Unable to verify this session. Reopen the game and retry.")
 	if in_reason == Zone.DENIED_REASON.CLIENT_VERSION_MISMATCH:
 		Game.critical_error(JOINER_ERRORS.ACCESS_DENIED, "Server/Client Version Mismatch. Update your game using the itch.io launcher, or reinstall the app from itch.io")
 		quit_to_main_menu()
@@ -541,18 +543,40 @@ func _join_new_server_locally(space_id: String) -> bool:
 	if should_create_a_new_server_locally:
 		if pid != null:
 			OS.kill(pid)
-		var firebase_auth = str(Firebase.Auth.auth.refreshtoken)
+		var firebase_auth = Net.get_host_login_credential()
 		# For debugging this allows you to grab breakpoints from the server "--remote-debug", "tcp://127.0.0.1:6008"]
 		# If enabled it could cause join time to be much longer when booting server
 		var arguments = ["--server", "--space", space_id, "--mode", "edit", "--uuid", "localhost", "--server_login", firebase_auth, "--headless"] # "--remote-debug", "tcp://127.0.0.1:6008"]
+		var startup = preload("res://scripts/net/local_host_startup.gd")
+		var ticket := Crypto.new().generate_random_bytes(16).hex_encode()
+		arguments.append_array(["--local_host_ticket", ticket])
 		pid = OS.create_process(OS.get_executable_path(), arguments, true)
+		var deadline := Time.get_ticks_msec() + 30000
+		var bound := false
+		while pid > 0 and OS.is_process_running(pid) and Time.get_ticks_msec() < deadline:
+			if startup.matches(ticket, pid, space_id, ProjectSettings.get_setting("mirror/zone_server_port")):
+				bound = true
+				break
+			await get_tree().create_timer(0.15).timeout
+		startup.clear(ticket)
+		if not bound:
+			if pid > 0 and OS.is_process_running(pid): OS.kill(pid)
+			pid = null
+			Game.critical_error(JOINER_ERRORS.SERVER_ERROR, "The new local host could not start. Another host may still be running. Close the previous game session, then retry.")
+			return true
 		start_join_localhost()
 		return true
 	return false
 
 
 func _find_zone_by_space(space_id: String) -> void:
-	if _join_new_server_locally(space_id):
+	if Net.is_local_development_auth():
+		var test_space: String = ProjectSettings.get_setting("mirror/local_dev_join_space", "")
+		var test_host: String = ProjectSettings.get_setting("mirror/local_dev_server_host", "")
+		if not test_host.is_empty() and space_id == test_space:
+			connect_to_server(test_host, ProjectSettings.get_setting("mirror/zone_server_port", 27015))
+			return
+	if await _join_new_server_locally(space_id):
 		return
 	# Normal join process with dedicated servers
 	var promise = Net.zone_finder.join_build_server(space_id)
@@ -565,7 +589,13 @@ func _find_zone_by_space(space_id: String) -> void:
 
 
 func _find_play_space(space_id: String) -> void:
-	if _join_new_server_locally(space_id):
+	if Net.is_local_development_auth():
+		var test_space: String = ProjectSettings.get_setting("mirror/local_dev_join_space", "")
+		var test_host: String = ProjectSettings.get_setting("mirror/local_dev_server_host", "")
+		if not test_host.is_empty() and space_id == test_space:
+			connect_to_server(test_host, ProjectSettings.get_setting("mirror/zone_server_port", 27015))
+			return
+	if await _join_new_server_locally(space_id):
 		return
 	var promise = Net.zone_finder.join_play_server(space_id)
 	var play_space = await promise.wait_till_fulfilled()

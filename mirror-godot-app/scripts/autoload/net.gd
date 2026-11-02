@@ -25,6 +25,78 @@ signal fully_logged_in()
 # The mongo_id of the user profile
 var user_id: String
 
+var _local_dev_session_active: bool = false
+
+
+func is_local_development_auth() -> bool:
+	if ProjectSettings.get_setting("mirror/env_name", "") != "local":
+		return false
+	if not ProjectSettings.get_setting("mirror/local_dev_auth_enabled", false):
+		return false
+	# Optional, explicit private-network destination for a separate test client.
+	var peer_host: String = ProjectSettings.get_setting("mirror/local_dev_server_host", "")
+	if not peer_host.is_empty() and not _is_private_development_ip(peer_host):
+		return false
+	for key in ["mirror/connection_server", "mirror/connection_server_ws"]:
+		var url: String = ProjectSettings.get_setting(key, "")
+		var parts := url.split("://", true, 1)
+		var schemes := ["http", "https"] if key == "mirror/connection_server" else ["ws", "wss"]
+		if parts.size() != 2 or parts[0] not in schemes: return false
+		var authority: String = parts[1].get_slice("/", 0)
+		var hostname: String = authority.get_slice(":", 0)
+		if authority.contains("@") or authority.contains("?") or authority.contains("#"): return false
+		if hostname not in ["127.0.0.1", "127.0.0.2", "localhost"] and (peer_host.is_empty() or hostname != peer_host):
+			return false
+	return true
+
+
+func _is_private_development_ip(host: String) -> bool:
+	if not host.is_valid_ip_address() or host.contains(":"): return false
+	var octets := host.split(".")
+	var a := int(octets[0]); var b := int(octets[1])
+	return a == 10 or (a == 172 and b >= 16 and b <= 31) or (a == 192 and b == 168) or (a == 100 and b >= 64 and b <= 127)
+
+
+func begin_local_development_session() -> bool:
+	if not is_local_development_auth():
+		return false
+	var token: String = ProjectSettings.get_setting("mirror/local_dev_auth_token", "")
+	if not token.begins_with("lumina-local-dev.") or token.length() != 81:
+		return false
+	_local_dev_session_active = true
+	return true
+
+
+func get_auth_token() -> String:
+	if is_local_development_auth():
+		return ProjectSettings.get_setting("mirror/local_dev_auth_token", "") if _local_dev_session_active else ""
+	return Firebase.Auth.get_jwt()
+
+
+func get_user_id_from_auth_token(token: String) -> String:
+	if is_local_development_auth():
+		if _local_dev_session_active and token == get_auth_token():
+			return ProjectSettings.get_setting("mirror/local_dev_user_id", "")
+		if not token.begins_with("lumina-local-dev.") or token.length() != 81 or not token.trim_prefix("lumina-local-dev.").is_valid_hex_number(false): return ""
+		# Configured only on the host, never shipped in the guest package.
+		var peers = ProjectSettings.get_setting("mirror/local_dev_peer_tokens", {})
+		if _local_dev_session_active and peers is Dictionary and peers.has(token):
+			var identity = str(peers[token])
+			if identity.length() == 24 and identity.is_valid_hex_number(false): return identity
+		return ""
+	if token.begins_with("lumina-local-dev."):
+		return ""
+	return JWT.get_user_id_from_jwt(token, "test123")
+
+
+func get_host_login_credential() -> String:
+	# The host reads the same local config; no local secret is passed on its command line.
+	if is_local_development_auth():
+		return "local-development"
+	return str(Firebase.Auth.auth.refreshtoken)
+
+
+
 
 func _ready() -> void:
 	add_child(user_client)
@@ -55,14 +127,16 @@ func logout() -> void:
 	user_client.logout_reset_current_user_profile()
 	space_client.user_spaces.clear()
 	group_client.user_groups.clear()
-	Firebase.Auth.logout()
+	_local_dev_session_active = false
+	if not is_local_development_auth():
+		Firebase.Auth.logout()
 	print("Logged out.")
 
 
 ## Returns true if the session token is populated
 # TODO: remove this method - METHOD dupe from Firebase.Auth.is_logged_in()
 func is_logged_in() -> bool:
-	return not Firebase.Auth.get_jwt().is_empty()
+	return not get_auth_token().is_empty()
 
 
 ## Returns true if the session token is populated
@@ -74,7 +148,7 @@ func is_fully_logged_in() -> bool:
 func login_success(mongo_id: String, _idtoken: String) -> void:
 	user_id = mongo_id
 	# print("JWT token check ", str(Firebase.Auth.get_jwt()))
-	print("Firebase Logged In As %s" % str(user_id))
+	print("Local development profile ready" if is_local_development_auth() else "Firebase Logged In As %s" % str(user_id))
 	logged_in.emit()
 	Analytics.track_event_client(AnalyticsEvent.TYPE.LOGIN_USER_SUCCESS, {"distinct_id": user_id})
 	# hardware analytics
@@ -95,7 +169,7 @@ func login_success(mongo_id: String, _idtoken: String) -> void:
 func _on_token_refreshed(auth: Dictionary) -> void:
 	if user_id != auth.get("localid"):
 		return
-	print("Session Refreshed new JWT: ", Firebase.Auth.get_jwt())
+	print("Session refreshed")
 
 
 func fully_log_in_user_with_profile(profile: Dictionary, auth_result: Dictionary) -> void:

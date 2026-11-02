@@ -65,6 +65,10 @@ var _vr_compression_level = DataBuffer.COMPRESSION_LEVEL_1
 var _constant_buffer_size = -1
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
+var dance_active: bool = false
+var dance_elapsed: float = 0.0
+var _dance_intent: bool = false
+
 # Vars used to network the Trickled.
 var _scale_compression_level = DataBuffer.COMPRESSION_LEVEL_2
 var _position_compression_level = DataBuffer.COMPRESSION_LEVEL_1
@@ -120,6 +124,8 @@ func _setup_synchronizer(local_id) -> void:
 	TMSceneSync.track_variable_changes([self], ["desired_body_id"], on_desired_body_id_change, TMSceneSync.ALWAYS)
 	TMSceneSync.register_variable(self, "frozen")
 	TMSceneSync.register_variable(self, "movement_scale")
+	TMSceneSync.register_variable(self, "dance_active")
+	TMSceneSync.register_variable(self, "dance_elapsed")
 	# NOTICE: No need to network the TRANSFORM, VELOCITY, etc.. because this is already handled by
 	#         the TMSceneSync by networking `jolt_sync_data`.
 	TMSceneSync.register_variable(self, "jolt_sync_data")
@@ -170,6 +176,7 @@ func _collect_inputs(delta: float, buffer: DataBuffer) -> void:
 	buffer.add_real(character_horizontal_rotation, _hori_rotation_compression_level)
 	buffer.add_real(character_head_vertical_rotation, _vert_rotation_compression_level)
 	buffer.add_bool(is_aiming)
+	buffer.add_bool(_dance_intent)
 
 
 func _count_input_size(inputs: DataBuffer) -> int:
@@ -192,12 +199,13 @@ func _count_input_size(inputs: DataBuffer) -> int:
 			+ inputs.get_real_size(_hori_rotation_compression_level)
 			+ inputs.get_real_size(_vert_rotation_compression_level)
 			+ inputs.get_bool_size()
+			+ inputs.get_bool_size() # dance intent
 		)
 	return _constant_buffer_size + variable_buffer_size
 
 
 func _are_inputs_different(inputs_A: DataBuffer, inputs_B: DataBuffer) -> bool:
-	if inputs_A.size != inputs_B.size:
+	if inputs_A.size() != inputs_B.size():
 		return true
 
 	if are_interactions_different(inputs_A, inputs_B):
@@ -254,6 +262,8 @@ func _are_inputs_different(inputs_A: DataBuffer, inputs_B: DataBuffer) -> bool:
 	if is_aiming_A != is_aiming_B:
 		return true
 
+	if inputs_A.read_bool() != inputs_B.read_bool():
+		return true
 	return false
 
 
@@ -277,6 +287,7 @@ func _controller_process(delta: float, buffer: DataBuffer) -> void:
 	var character_horizontal_rotation = buffer.read_real(_hori_rotation_compression_level)
 	var character_head_vertical_rotation = buffer.read_real(_vert_rotation_compression_level)
 	var is_aiming = buffer.read_bool()
+	var wants_dance: bool = buffer.read_bool()
 	if not _lumina_guard("physics.decoded_inputs", {"move": input_move, "yaw": character_horizontal_rotation, "pitch": character_head_vertical_rotation, "vr_position": vr_body_position, "vr_old_position": vr_old_position}):
 		return
 
@@ -291,6 +302,17 @@ func _controller_process(delta: float, buffer: DataBuffer) -> void:
 	process_character(delta, input_move, input_run, input_jump, gravity)
 	if not _lumina_guard("physics.native_result", {"body": global_transform, "velocity": linear_velocity}):
 		return
+
+	var allowed_dance = LuminaDance.can_dance(input_move, input_jump, is_on_floor(), sitting, is_dead(), is_aiming, vr_is_active, frozen)
+	if wants_dance and allowed_dance:
+		if not dance_active: dance_elapsed = 0.0
+		dance_active = true
+		dance_elapsed += delta
+	else:
+		dance_active = false
+		dance_elapsed = 0.0
+		if wants_dance and not allowed_dance and is_local_player() and not TMSceneSync.is_rewinding():
+			_dance_intent = false
 
 	if not is_dead():
 		_desired_horizontal_rotation = character_horizontal_rotation
@@ -325,6 +347,7 @@ func _controller_process(delta: float, buffer: DataBuffer) -> void:
 			is_dead(),
 			is_aiming,
 		)
+		model.set_dance_state(dance_active, dance_elapsed)
 
 
 func update_interpolated_node(sync_delta):
@@ -396,6 +419,8 @@ func trickled_sync_state_collect(db: DataBuffer, update_rate: float) -> void:
 	db.add_bool(animation_details_dead)
 	db.add_bool(animation_details_is_aiming)
 	db.add_uint(animation_details_stance, _stance_compression_level)
+	db.add_bool(dance_active)
+	db.add_real(dance_elapsed, _position_compression_level)
 
 
 func trickled_sync_state_apply(dt: float, alpha: float, db_from: DataBuffer, db_to: DataBuffer) -> void:
@@ -415,6 +440,8 @@ func trickled_sync_state_apply(dt: float, alpha: float, db_from: DataBuffer, db_
 	var old_animation_details_dead := db_from.read_bool()
 	var old_animation_details_is_aiming := db_from.read_bool()
 	var old_animation_details_stance := db_from.read_uint(_stance_compression_level)
+	var old_dance_active := db_from.read_bool()
+	var old_dance_elapsed := db_from.read_real(_position_compression_level)
 
 	var new_rotation_y: float = db_to.read_unit_real(_rotation_compression_level) * PI
 	var new_rotation_x: float = db_to.read_unit_real(_rotation_compression_level) * (PI / 2.0)
@@ -427,6 +454,8 @@ func trickled_sync_state_apply(dt: float, alpha: float, db_from: DataBuffer, db_
 	var new_animation_details_dead := db_to.read_bool()
 	var new_animation_details_is_aiming := db_to.read_bool()
 	var new_animation_details_stance := db_to.read_uint(_stance_compression_level)
+	var new_dance_active := db_to.read_bool()
+	var new_dance_elapsed := db_to.read_real(_position_compression_level)
 	if not _lumina_guard("network.decoded_snapshot", {"old_position": old_position, "new_position": new_position, "positive_old_scale": old_scale, "positive_new_scale": new_scale, "old_yaw": old_rotation_y, "new_yaw": new_rotation_y, "old_pitch": old_rotation_x, "new_pitch": new_rotation_x, "old_velocity": old_animation_details_velocity, "new_velocity": new_animation_details_velocity}):
 		return
 
@@ -462,6 +491,7 @@ func trickled_sync_state_apply(dt: float, alpha: float, db_from: DataBuffer, db_
 		#decode_stance(animation_details_stance)
 		model.stance
 	)
+	model.set_dance_state(lerp_phase(old_dance_active, new_dance_active, alpha), LuminaDance.remote_elapsed(old_dance_active, old_dance_elapsed, new_dance_active, new_dance_elapsed, alpha))
 
 
 func _on_body_created() -> void:
@@ -1352,3 +1382,12 @@ func create_emoji(emoji: String) -> void:
 	social_ui.create_emoji(emoji)
 	if not Zone.is_host() and is_local_player():
 		GameUI.instance.chat_ui.send_chat_message_server.rpc_id(Zone.SERVER_PEER_ID, emoji)
+
+
+func request_dance_toggle() -> void:
+	if Zone.is_host() or not is_local_player() or is_dead() or frozen or VRManager.vr_is_active: return
+	if not is_player_input_allowed() or not _input_controller.does_game_mode_accept_input or get_current_seat_path_or_null() != null: return
+	_dance_intent = not _dance_intent
+
+func request_dance_stop() -> void:
+	if not Zone.is_host() and is_local_player(): _dance_intent = false

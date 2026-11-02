@@ -288,6 +288,7 @@ func load_client_asset(asset_id: String) -> void:
 func _load_asset() -> void:
 	asset_id = space_object_data["asset"]
 	var is_new_asset_id = not current_asset.is_empty() and current_asset["_id"] != asset_id
+	var needs_cached_setup := false
 	if asset_id.is_empty():
 		_set_as_errored("critical: invalid asset for space object")
 		return
@@ -302,11 +303,15 @@ func _load_asset() -> void:
 			else:
 				await load_client_asset(asset_id)
 		else:
-			if is_new_asset_id:
-				_setup_object()
+			needs_cached_setup = is_new_asset_id
 	# we populate the asset data if it has no type we can return early.
 	if not _populate_asset_data():
 		_set_as_errored("[%s] invalid asset data _load_asset asset_id: %s" % [Zone.get_instance_type(), asset_id])
+		return
+	# Populate the new file promise before setting up an already-cached asset.
+	# Setting up first can silently keep the previous model/materials onscreen.
+	if needs_cached_setup:
+		_setup_object()
 
 
 # we block the ready_safe function from being called twice.

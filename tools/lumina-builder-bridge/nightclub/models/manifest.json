@@ -1,0 +1,482 @@
+{
+  "bar_counter": {
+    "file": "bar_counter.glb",
+    "bounds": {
+      "position": [
+        -0.725,
+        0.0,
+        -8.1
+      ],
+      "size": [
+        1.4725,
+        1.1600000000000001,
+        16.2
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 1,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 18812
+  },
+  "backbar": {
+    "file": "backbar.glb",
+    "bounds": {
+      "position": [
+        -0.09,
+        0.0,
+        -7.2175
+      ],
+      "size": [
+        0.7625,
+        3.3,
+        14.435
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 1,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 342676
+  },
+  "stool": {
+    "file": "stool.glb",
+    "bounds": {
+      "position": [
+        -0.32,
+        0.0,
+        -0.32
+      ],
+      "size": [
+        0.64,
+        1.15,
+        0.64
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 0,
+    "seats": 1,
+    "lights": 0,
+    "bytes": 32552
+  },
+  "sofa": {
+    "file": "sofa.glb",
+    "bounds": {
+      "position": [
+        -1.4500000000000002,
+        0.0,
+        -0.505
+      ],
+      "size": [
+        2.9000000000000004,
+        1.225,
+        1.005
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 0,
+    "seats": 1,
+    "lights": 0,
+    "bytes": 22392
+  },
+  "armchair": {
+    "file": "armchair.glb",
+    "bounds": {
+      "position": [
+        -0.5499999999999999,
+        0.024999999999999994,
+        -0.49
+      ],
+      "size": [
+        1.0999999999999999,
+        1.23,
+        0.94
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 0,
+    "seats": 1,
+    "lights": 0,
+    "bytes": 5980
+  },
+  "table": {
+    "file": "table.glb",
+    "bounds": {
+      "position": [
+        -0.625,
+        0.0,
+        -0.625
+      ],
+      "size": [
+        1.25,
+        0.52,
+        1.25
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 0,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 32084
+  },
+  "table_details": {
+    "file": "table_details.glb",
+    "bounds": {
+      "position": [
+        -0.22499999999999998,
+        0.0,
+        -0.16499999999999998
+      ],
+      "size": [
+        0.38999999999999996,
+        0.17,
+        0.26999999999999996
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 1,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 28304
+  },
+  "dj_console": {
+    "file": "dj_console.glb",
+    "bounds": {
+      "position": [
+        -3.1,
+        0.0,
+        -0.675
+      ],
+      "size": [
+        6.2,
+        1.895,
+        1.35
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 3,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 95608
+  },
+  "speaker": {
+    "file": "speaker.glb",
+    "bounds": {
+      "position": [
+        -0.5,
+        0.0,
+        -0.425
+      ],
+      "size": [
+        1.0,
+        2.7,
+        0.929
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 1,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 81384
+  },
+  "dj_backdrop": {
+    "file": "dj_backdrop.glb",
+    "bounds": {
+      "position": [
+        -5.9,
+        0.0,
+        -0.08
+      ],
+      "size": [
+        11.8,
+        5.3,
+        0.2
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 0,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 4016
+  },
+  "crescent": {
+    "file": "crescent.glb",
+    "bounds": {
+      "position": [
+        -1.25,
+        -1.2499793809567608,
+        -0.08
+      ],
+      "size": [
+        1.9626666666666663,
+        2.4999587619135215,
+        0.16
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 1,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 37984
+  },
+  "stage_lightbars": {
+    "file": "stage_lightbars.glb",
+    "bounds": {
+      "position": [
+        -4.485,
+        0.0,
+        -0.06
+      ],
+      "size": [
+        8.97,
+        3.5,
+        0.1435
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 2,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 12688
+  },
+  "club_sign": {
+    "file": "club_sign.glb",
+    "bounds": {
+      "position": [
+        -3.0,
+        -0.28,
+        -0.06
+      ],
+      "size": [
+        6.0,
+        1.8,
+        0.1575
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 2,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 53272
+  },
+  "exit_sign": {
+    "file": "exit_sign.glb",
+    "bounds": {
+      "position": [
+        -0.675,
+        -0.07500000000000001,
+        -0.05
+      ],
+      "size": [
+        1.35,
+        0.55,
+        0.14750000000000002
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 1,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 11980
+  },
+  "entry_trim": {
+    "file": "entry_trim.glb",
+    "bounds": {
+      "position": [
+        -2.16,
+        0.0,
+        -0.07
+      ],
+      "size": [
+        4.32,
+        3.6399999999999997,
+        0.1625
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 1,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 6776
+  },
+  "wall_accents": {
+    "file": "wall_accents.glb",
+    "bounds": {
+      "position": [
+        -15.68,
+        1.0,
+        -6.08
+      ],
+      "size": [
+        31.36,
+        2.5,
+        20.16
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 2,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 19544
+  },
+  "plant": {
+    "file": "plant.glb",
+    "bounds": {
+      "position": [
+        -0.39956459888596985,
+        0.0,
+        -0.3592003722576851
+      ],
+      "size": [
+        0.8046182027286765,
+        1.5605111072179032,
+        0.7246177180305589
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 0,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 18620
+  },
+  "lighting_rig": {
+    "file": "lighting_rig.glb",
+    "bounds": {
+      "position": [
+        -14.100000000000001,
+        3.6975,
+        -4.125
+      ],
+      "size": [
+        18.85,
+        2.7925000000000004,
+        11.425
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 3,
+    "seats": 0,
+    "lights": 11,
+    "bytes": 15324
+  },
+  "step_markers": {
+    "file": "step_markers.glb",
+    "bounds": {
+      "position": [
+        -12.6,
+        0.20500000000000002,
+        -14.6
+      ],
+      "size": [
+        25.2,
+        0.6080000000000001,
+        4.59
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 1,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 11416
+  },
+  "border_side": {
+    "file": "border_side.glb",
+    "bounds": {
+      "position": [
+        -0.06,
+        0.0,
+        -8.0
+      ],
+      "size": [
+        0.12,
+        0.002,
+        16.0
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 1,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 1872
+  },
+  "border_end": {
+    "file": "border_end.glb",
+    "bounds": {
+      "position": [
+        -6.88,
+        0.0,
+        -0.06
+      ],
+      "size": [
+        13.76,
+        0.002,
+        0.12
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 1,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 1876
+  },
+  "inset_red": {
+    "file": "inset_red.glb",
+    "bounds": {
+      "position": [
+        -0.12,
+        0.0,
+        -1.5
+      ],
+      "size": [
+        0.24,
+        0.001,
+        3.0
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 1,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 1868
+  },
+  "inset_violet": {
+    "file": "inset_violet.glb",
+    "bounds": {
+      "position": [
+        -0.12,
+        0.0,
+        -1.5
+      ],
+      "size": [
+        0.24,
+        0.001,
+        3.0
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 1,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 1876
+  },
+  "starry_sky": {
+    "file": "starry_sky.glb",
+    "bounds": {
+      "position": [
+        -300,
+        -300,
+        -300
+      ],
+      "size": [
+        600,
+        600,
+        600
+      ]
+    },
+    "meshes": 1,
+    "emissive_surfaces": 0,
+    "seats": 0,
+    "lights": 0,
+    "bytes": 1966856
+  }
+}

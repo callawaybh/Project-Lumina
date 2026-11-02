@@ -1,0 +1,5 @@
+config_version=5
+[application]
+config/name="Lumina LAN Login Checks"
+[rendering]
+renderer/rendering_method="gl_compatibility"

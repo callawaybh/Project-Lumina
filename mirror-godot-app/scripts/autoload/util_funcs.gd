@@ -57,7 +57,7 @@ static func get_server_token() -> String:
 	if not commandline_token.is_empty():
 		return commandline_token
 	# when hosted from a local machine it supplies the jwt
-	return Firebase.Auth.get_jwt()
+	return Net.get_auth_token()
 
 
 ## gets the current platform executable path.

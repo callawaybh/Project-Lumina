@@ -141,7 +141,7 @@ func _on_visibility_changed() -> void:
 
 
 func _is_able_to_refresh() -> bool:
-	return Firebase.Auth and not Firebase.Auth.get_jwt().is_empty()
+	return Firebase.Auth and not Net.get_auth_token().is_empty()
 
 
 func on_space_created(space_data: Variant) -> void:

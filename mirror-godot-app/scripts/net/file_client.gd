@@ -109,7 +109,7 @@ func get_file(url: String, priority: Enums.DownloadPriority = Enums.DownloadPrio
 
 
 
-	var promise = self.get_request_ext(GET_FILE, url, {"priority": priority})
+	var promise = self.get_request_ext(GET_FILE, url, {"priority": priority, "local_download_url": _development_download_url(url)})
 	_file_requests_queued[url] = promise
 	return promise
 
@@ -262,3 +262,13 @@ func _process_request_queue() -> void:
 		return
 	_requests.erase(request)
 	_make_request(request)
+
+
+func _development_download_url(url: String) -> String:
+	if not Net.is_local_development_auth(): return url
+	var server: String = ProjectSettings.get_setting("mirror/local_dev_server_host", "")
+	if server.is_empty(): return url
+	for origin in ["http://localhost:9000/assets-storage/", "http://127.0.0.1:9000/assets-storage/", "http://127.0.0.2:9000/assets-storage/"]:
+		if url.begins_with(origin):
+			return str(ProjectSettings.get_setting("mirror/connection_server")).trim_suffix("/") + "/assets-storage/" + url.trim_prefix(origin)
+	return url

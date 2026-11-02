@@ -1,9 +1,21 @@
-[gd_scene load_steps=165 format=3 uid="uid://ca03bets8mk8g"]
+[gd_scene load_steps=169 format=3 uid="uid://ca03bets8mk8g"]
 
 [ext_resource type="Script" path="res://player/animations/animation_controller.gd" id="2"]
 [ext_resource type="PackedScene" uid="uid://68hhrrdc1t6p" path="res://player/character_models/astronaut/astronaut.tscn" id="2_aa1ea"]
 [ext_resource type="AnimationLibrary" uid="uid://g3ykvdyk42j0" path="res://player/animations/humanoid/humanoid_animations.glb" id="2_fbv3n"]
 [ext_resource type="Script" path="res://player/equipable/equipable_world_model.gd" id="2_hofr5"]
+
+[ext_resource type="Animation" path="res://player/animations/dances/dance_twerk.tres" id="8_dance"]
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_lumina_emotes"]
+_data = {
+"dance_twerk": ExtResource("8_dance")
+}
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_lumina_dance"]
+animation = &"lumina_emotes/dance_twerk"
+
+[sub_resource type="AnimationNodeTimeSeek" id="AnimationNodeTimeSeek_lumina_dance"]
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_y5102"]
 animation = &"humanoid_animations/death_01"
@@ -563,6 +575,10 @@ input_4/name = "Dead"
 input_4/auto_advance = false
 input_4/break_loop_at_end = false
 input_4/reset = true
+input_5/name = "Dance"
+input_5/auto_advance = false
+input_5/break_loop_at_end = false
+input_5/reset = true
 
 [sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_7e215"]
 
@@ -725,6 +741,10 @@ node_connections = [&"output", 0, &"Main_State"]
 
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_1dkkp"]
 graph_offset = Vector2(-256, -296)
+nodes/Dance/node = SubResource("AnimationNodeAnimation_lumina_dance")
+nodes/Dance/position = Vector2(-200, 800)
+nodes/DanceSeek/node = SubResource("AnimationNodeTimeSeek_lumina_dance")
+nodes/DanceSeek/position = Vector2(60, 800)
 nodes/DeathState/node = SubResource("AnimationNodeStateMachine_jy5e6")
 nodes/DeathState/position = Vector2(60, 600)
 nodes/Pistol/node = SubResource("AnimationNodeBlendTree_gdokn")
@@ -740,7 +760,7 @@ nodes/TimeScale/position = Vector2(600, 0)
 nodes/Unarmed/node = SubResource("AnimationNodeBlendTree_xc0tf")
 nodes/Unarmed/position = Vector2(60, -200)
 nodes/output/position = Vector2(800, 0)
-node_connections = [&"Stance", 0, &"Unarmed", &"Stance", 1, &"Pistol", &"Stance", 2, &"Rifle", &"Stance", 3, &"Sitting", &"Stance", 4, &"DeathState", &"TimeScale", 0, &"Stance", &"output", 0, &"TimeScale"]
+node_connections = [&"Stance", 0, &"Unarmed", &"Stance", 1, &"Pistol", &"Stance", 2, &"Rifle", &"Stance", 3, &"Sitting", &"Stance", 4, &"DeathState", &"Stance", 5, &"DanceSeek", &"DanceSeek", 0, &"Dance", &"TimeScale", 0, &"Stance", &"output", 0, &"TimeScale"]
 
 [node name="AnimationController" type="Node3D"]
 top_level = true
@@ -763,7 +783,8 @@ script = ExtResource("2_hofr5")
 reset_on_save = false
 root_node = NodePath("../default_model")
 libraries = {
-"humanoid_animations": ExtResource("2_fbv3n")
+"humanoid_animations": ExtResource("2_fbv3n"),
+"lumina_emotes": SubResource("AnimationLibrary_lumina_emotes")
 }
 autoplay = "humanoid_animations/standing_idle"
 
@@ -1165,3 +1186,5 @@ parameters/Unarmed/output/current_delta = null
 parameters/output/current_length = null
 parameters/output/current_position = null
 parameters/output/current_delta = null
+
+parameters/DanceSeek/seek_request = -1.0

@@ -1,0 +1,9 @@
+config_version=5
+[application]
+config/name="Lumina native character regression"
+[jolt]
+config/layers_table="res://layers.tres"
+[rendering]
+renderer/rendering_method="gl_compatibility"
+[threading]
+worker_pool/max_threads=2

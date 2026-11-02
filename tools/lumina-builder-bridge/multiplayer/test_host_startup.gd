@@ -1,0 +1,28 @@
+extends SceneTree
+func _initialize() -> void:
+	var startup = load("C:/Dev/LuminaClient/mirror-godot-app/scripts/net/local_host_startup.gd")
+	var ticket := "d".repeat(32)
+	assert(startup.path_for("../bad").is_empty())
+	startup.clear(ticket)
+	assert(not startup.matches(ticket,1234,"space-a",27015))
+	assert(startup.report_bound(ticket,1234,"space-a",27015))
+	assert(startup.matches(ticket,1234,"space-a",27015))
+	assert(not startup.matches(ticket,4321,"space-a",27015))
+	assert(not startup.matches(ticket,1234,"space-b",27015))
+	assert(not startup.matches(ticket,1234,"space-a",27016))
+	startup.clear(ticket)
+	assert(not startup.matches(ticket,1234,"space-a",27015))
+	var occupied := ENetMultiplayerPeer.new()
+	assert(occupied.create_server(39057,2)==OK)
+	var source := FileAccess.get_file_as_string("C:/Dev/LuminaClient/mirror-godot-app/scripts/autoload/zone/server.gd")
+	var prefix := source.split("func start_server() -> bool:",true,1)[1].split("\n\tZone.server_host = true",true,1)[0]
+	var script := GDScript.new()
+	script.source_code = "extends RefCounted\nclass MockUtil:\n\tfunc get_commandline_id_val(_key): return \"" + ticket + "\"\nclass MockTree:\n\tvar quit_code = 0\n\tfunc quit(code): quit_code = code\nvar Util = MockUtil.new()\nvar tree = MockTree.new()\nvar server_peer\nvar _server_data_received = false\nvar port = 39057\nfunc get_tree(): return tree\nfunc start_server() -> bool:" + prefix + "\n\treturn true\n"
+	assert(script.reload()==OK)
+	var blocked = script.new()
+	assert(not blocked.start_server())
+	assert(blocked.server_peer == null)
+	assert(blocked.tree.quit_code == 2)
+	occupied.close()
+	print("LUMINA_HOST_STARTUP_PASS: receipt identity checks and actual occupied-port failure path")
+	quit()

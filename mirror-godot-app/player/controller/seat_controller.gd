@@ -101,7 +101,8 @@ func _try_sit_on_valid_seat(seat_node: Node3D) -> void:
 	if _current_seat != null:
 		# This case runs when already sitting and trying to sit on a different seat.
 		_enable_player_collision(true)
-		_current_seat.emit_signal(&"player_unsit_here", _player)
+		if _current_seat.has_signal(&"player_unsit_here"):
+			_current_seat.emit_signal(&"player_unsit_here", _player)
 	_current_seat = seat_node
 	_omi_seat = seat_node.get_meta(&"OMI_seat")
 	_enable_player_collision(false)
@@ -113,7 +114,9 @@ func _try_sit_on_valid_seat(seat_node: Node3D) -> void:
 		_player.set_frozen(true)
 		if VRManager.vr_is_active:
 			_player.vr_controller.origin_set_rotation_y(look_angle)
-	_current_seat.emit_signal(&"player_sit_here", _player)
+	# Plain OMI seats need no script listener; emit optional custom events only when registered.
+	if _current_seat.has_signal(&"player_sit_here"):
+		_current_seat.emit_signal(&"player_sit_here", _player)
 
 
 func get_off_seat() -> void:
@@ -126,7 +129,8 @@ func get_off_seat() -> void:
 		_enable_player_collision(true)
 		_player.set_body_mode(JBody3D.KINEMATIC)
 		_player.set_frozen(false)
-		_current_seat.emit_signal(&"player_unsit_here", _player)
+		if _current_seat.has_signal(&"player_unsit_here"):
+			_current_seat.emit_signal(&"player_unsit_here", _player)
 	_current_seat = null
 
 

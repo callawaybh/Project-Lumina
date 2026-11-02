@@ -14,6 +14,10 @@ signal slot_updated(slot)
 @onready var text = $Text
 @onready var outline = $Outline
 
+var action_id: StringName = &""
+var _action_title: String = ""
+var _action_active := false
+
 var asset_data: AssetData = null
 var asset_dict: Dictionary = {}
 var asset_id: String = ""
@@ -38,6 +42,7 @@ func deselect() -> void:
 
 
 func set_slot(id: String, image: Texture2D = null) -> void:
+	if not action_id.is_empty(): return
 	asset_id = id
 	asset_dict = Net.asset_client.get_asset_json(asset_id)
 	if asset_dict.is_empty():
@@ -64,6 +69,7 @@ func set_slot(id: String, image: Texture2D = null) -> void:
 
 
 func clear_slot_no_emit() -> void:
+	if not action_id.is_empty(): return
 	asset_data = null
 	asset_id = ""
 	asset_type = ""
@@ -96,7 +102,7 @@ func _on_asset_deleted(asset: Dictionary) -> void:
 
 
 func _can_drop_data(_position, data) -> bool:
-	return data is Dictionary and not data.get("asset_id", "").is_empty()
+	return action_id.is_empty() and data is Dictionary and not data.get("asset_id", "").is_empty()
 
 
 func _drop_data(_position, data) -> void:
@@ -105,7 +111,7 @@ func _drop_data(_position, data) -> void:
 
 
 func _get_drag_data(_position) -> Variant:
-	if asset_id.is_empty() or Zone.is_in_play_mode():
+	if not action_id.is_empty() or asset_id.is_empty() or Zone.is_in_play_mode():
 		return null
 	var asset_url = Net.asset_client.get_asset_url(asset_id)
 	var is_model_url_known = not asset_url.is_empty()
@@ -129,7 +135,7 @@ func _get_drag_data(_position) -> Variant:
 
 
 func _gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		slot_pressed.emit(self)
 
 
@@ -139,3 +145,21 @@ func _on_mouse_entered() -> void:
 
 func _on_mouse_exited() -> void:
 	outline.self_modulate = selected_color if selected else deselected_color
+
+
+func set_action(id: StringName, image: Texture2D, title: String) -> void:
+	action_id = id
+	_action_title = title
+	asset_id = ""
+	asset_data = null
+	asset_dict = {}
+	asset_type = ""
+	preview.texture = image
+	_is_equipable.hide()
+	set_action_active(false, true)
+
+func set_action_active(active: bool, force := false) -> void:
+	if not force and _action_active == active: return
+	_action_active = active
+	preview.self_modulate = Color(0.4, 1.0, 0.85) if active else Color.WHITE
+	tooltip_text = "Stop dancing [1]" if active else _action_title + " [1]"

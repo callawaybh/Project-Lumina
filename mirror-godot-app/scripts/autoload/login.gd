@@ -33,7 +33,7 @@ static func wait_till_login(scene_tree: SceneTree):
 	if not Firebase or not Firebase.Auth or not GameUI.instance.login_ui:
 		await scene_tree.process_frame
 	# now we check are we fully logged into the app
-	if Net.is_fully_logged_in() and Firebase.Auth.is_logged_in():
+	if Net.is_fully_logged_in():
 		return
 	# we wait until this is the case since we weren't logged in
 	await GameUI.instance.login_ui.login_succeeded
@@ -53,6 +53,18 @@ static func login_as_user(
 	access_token: String,
 	refresh_token: String,
 	tree: SceneTree):
+	if Net.is_local_development_auth():
+		if not Net.begin_local_development_session():
+			push_error("Local development access is not configured")
+			return
+		var local_profile: Dictionary = await get_latest_mirror_profile_or_create_it()
+		var expected_id: String = ProjectSettings.get_setting("mirror/local_dev_user_id", "")
+		if local_profile.get("_id", "") != expected_id:
+			Net.logout()
+			push_error("Unable to load configured local profile")
+			return
+		fully_log_in_user(local_profile, {"idtoken": Net.get_auth_token(), "localid": expected_id})
+		return
 	var custom_auth_dict = {
 		"refresh_token" = refresh_token
 	}
@@ -81,6 +93,7 @@ static func fully_log_in_user(mirror_profile: Dictionary, auth_result: Dictionar
 	if not mirror_profile.has("displayName"):
 		push_error("Invalid profile missing name")
 		return false
-	Firebase.Auth.get_user_data()
+	if not Net.is_local_development_auth():
+		Firebase.Auth.get_user_data()
 	Net.fully_log_in_user_with_profile(mirror_profile, auth_result)
 	return true

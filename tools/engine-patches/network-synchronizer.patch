@@ -1,0 +1,12 @@
+diff --git a/godot4/gd_scene_synchronizer.cpp b/godot4/gd_scene_synchronizer.cpp
+index 47f6906..0590190 100644
+--- a/godot4/gd_scene_synchronizer.cpp
++++ b/godot4/gd_scene_synchronizer.cpp
+@@ -135,7 +135,6 @@ void GdSceneSynchronizer::_bind_methods() {
+ GdSceneSynchronizer::GdSceneSynchronizer() :
+ 		Node(),
+ 		scene_synchronizer(false) {
+-	rpc_id(1, "");
+ 
+ 	Dictionary rpc_config_reliable;
+ 	rpc_config_reliable["rpc_mode"] = MultiplayerAPI::RPC_MODE_ANY_PEER;

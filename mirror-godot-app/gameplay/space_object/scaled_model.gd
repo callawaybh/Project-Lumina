@@ -68,6 +68,7 @@ func setup_model(model_source: Node) -> void:
 	_model_source = model_source
 	_setup_model_and_mesh()
 	_setup_extra_nodes()
+	_setup_club_effects()
 	refresh_model_materials()
 	refresh_model_visibility()
 	# Must wait one physics frame for the physics server to
@@ -466,3 +467,15 @@ func refresh_model_visibility():
 		mesh.visibility_range_begin_margin = _space_object.visible_from_margin
 		mesh.visibility_range_end_margin = _space_object.visible_to_margin
 		mesh.visibility_range_fade_mode = fade_mode
+
+
+## One fixed, versioned visual preset. Imported assets cannot supply executable code.
+func _setup_club_effects() -> void:
+	if not is_instance_valid(_model_node) or DisplayServer.get_name() == "headless":
+		return
+	var marker: Node = _model_node if str(_model_node.name) == "LUMINA_NIGHTCLUB_FX_V1" else _model_node.find_child("LUMINA_NIGHTCLUB_FX_V1", true, false)
+	if marker == null or marker.has_node(^"LuminaClubEffects"):
+		return
+	var effects := preload("res://gameplay/space_object/effects/club_effects.gd").new()
+	effects.name = "LuminaClubEffects"
+	marker.add_child(effects)

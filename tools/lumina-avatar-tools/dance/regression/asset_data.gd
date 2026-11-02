@@ -1,0 +1,10 @@
+extends RefCounted
+signal preview_generated()
+signal preview_downloaded()
+signal files_loaded()
+var type="MESH"
+var is_equipable=false
+var preview_texture:Texture2D
+func populate(_data):pass
+func try_get_preview_texture(_priority):pass
+func try_download_file(_priority):pass

@@ -1,0 +1,19 @@
+{
+  "status": "single_player_dance_confirmed_by_user",
+  "hotbar_slot": 1,
+  "source_filename": "Dancing Twerk.fbx",
+  "clip_seconds": 15.2,
+  "checks_passed": 444,
+  "script_scan_passed": true,
+  "offline_avatar_pose_reviewed": true,
+  "live_single_player_verified": true,
+  "live_multiplayer_verified": true,
+  "all_clients_must_update": true,
+  "previous_live_result": "failed: arms folded backward; source T-pose vs target A-pose not corrected",
+  "source_direction_comparisons": 228,
+  "source_direction_max_error_degrees": 0.0,
+  "offline_engine_animation_player_verified": true,
+  "per_avatar_bind_pose_conversion": true,
+  "avatar_shirt_deformation": "User observed minor tearing; explicitly deferred",
+  "multiplayer_confirmation": "User reported synchronized activity and supplied screenshot of both avatars dancing in the nightclub."
+}

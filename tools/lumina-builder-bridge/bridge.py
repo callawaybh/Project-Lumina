@@ -7,11 +7,11 @@ import time
 import uuid
 
 
-def submit(project, command, timeout=90):
+def submit(project, command, timeout=90, request_id=None):
     inbox = Path(project) / '.lumina-bridge'
     if not (inbox / 'enabled').exists():
         raise RuntimeError('Bridge disabled. Run the enable command first.')
-    request_id = uuid.uuid4().hex
+    request_id = request_id or uuid.uuid4().hex
     payload = dict(command, id=request_id)
     temporary = inbox / f'{request_id}.tmp'
     request = inbox / f'{request_id}.request.json'
@@ -40,6 +40,25 @@ def build_parser():
     sub.add_parser('status')
     sub.add_parser('list_objects')
     sub.add_parser('list_groups')
+    for action in ('create_model', 'replace_model', 'create_audio'):
+        prepared = sub.add_parser(action)
+        prepared.add_argument('--space-id', required=True)
+        prepared.add_argument('--file', required=True, help='Prepared filename inside .lumina-bridge/models')
+        if action == 'replace_model':
+            prepared.add_argument('object_id')
+        else:
+            prepared.add_argument('--name', required=True)
+            prepared.add_argument('--position', nargs=3, type=float, required=True)
+            prepared.add_argument('--rotation', nargs=3, type=float, default=[0, 0, 0])
+            prepared.add_argument('--no-collision', action='store_true')
+    inspect = sub.add_parser('inspect_object')
+    inspect.add_argument('object_id')
+    environment = sub.add_parser('set_environment')
+    environment.add_argument('--space-id', required=True)
+    environment.add_argument('--changes-json', required=True)
+    delete = sub.add_parser('delete_objects')
+    delete.add_argument('--space-id', required=True)
+    delete.add_argument('object_ids', nargs='+')
     join = sub.add_parser('join_space')
     join.add_argument('space_id')
     create = sub.add_parser('create_primitive')
@@ -80,7 +99,20 @@ def build_parser():
 
 def command_from_args(args):
     command = {'action': args.action}
-    if args.action == 'join_space':
+    if args.action in ('create_model', 'replace_model', 'create_audio'):
+        command.update(space_id=args.space_id, file=args.file)
+        if args.action == 'replace_model':
+            command['object_id'] = args.object_id
+        else:
+            command.update(name=args.name, position=args.position, rotation=args.rotation,
+                           collision_enabled=not args.no_collision)
+    elif args.action == 'inspect_object':
+        command['object_id'] = args.object_id
+    elif args.action == 'set_environment':
+        command.update(space_id=args.space_id, changes=json.loads(args.changes_json))
+    elif args.action == 'delete_objects':
+        command.update(space_id=args.space_id, object_ids=args.object_ids)
+    elif args.action == 'join_space':
         command['space_id'] = args.space_id
     elif args.action == 'create_primitive':
         command.update({key: getattr(args, key) for key in ('shape', 'name', 'position', 'size', 'color')})

@@ -1,0 +1,255 @@
+[gd_resource type="AnimationLibrary" load_steps=85 format=3]
+[sub_resource type="Animation" id="a0"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a1"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a2"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a3"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a4"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a5"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a6"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a7"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a8"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a9"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a10"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a11"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a12"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a13"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a14"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a15"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a16"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a17"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a18"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a19"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a20"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a21"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a22"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a23"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a24"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a25"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a26"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a27"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a28"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a29"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a30"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a31"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a32"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a33"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a34"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a35"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a36"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a37"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a38"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a39"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a40"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a41"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a42"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a43"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a44"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a45"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a46"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a47"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a48"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a49"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a50"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a51"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a52"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a53"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a54"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a55"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a56"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a57"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a58"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a59"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a60"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a61"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a62"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a63"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a64"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a65"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a66"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a67"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a68"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a69"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a70"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a71"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a72"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a73"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a74"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a75"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a76"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a77"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a78"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a79"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a80"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a81"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a82"]
+length=1.0
+loop_mode=1
+[sub_resource type="Animation" id="a83"]
+length=1.0
+loop_mode=1
+[resource]
+_data={"death_01":SubResource("a0"),"fall":SubResource("a1"),"jump":SubResource("a2"),"land":SubResource("a3"),"pistol_ads_fire":SubResource("a4"),"pistol_ads_idle":SubResource("a5"),"pistol_ads_walking_backward":SubResource("a6"),"pistol_ads_walking_backward_left":SubResource("a7"),"pistol_ads_walking_backward_right":SubResource("a8"),"pistol_ads_walking_forward":SubResource("a9"),"pistol_ads_walking_forward_left":SubResource("a10"),"pistol_ads_walking_forward_right":SubResource("a11"),"pistol_ads_walking_left":SubResource("a12"),"pistol_ads_walking_right":SubResource("a13"),"pistol_hip_fire":SubResource("a14"),"pistol_hip_idle":SubResource("a15"),"pistol_hip_running_backward":SubResource("a16"),"pistol_hip_running_backward_left":SubResource("a17"),"pistol_hip_running_backward_right":SubResource("a18"),"pistol_hip_running_forward":SubResource("a19"),"pistol_hip_running_forward_left":SubResource("a20"),"pistol_hip_running_forward_right":SubResource("a21"),"pistol_hip_running_left":SubResource("a22"),"pistol_hip_running_right":SubResource("a23"),"pistol_hip_walking_backward":SubResource("a24"),"pistol_hip_walking_backward_left":SubResource("a25"),"pistol_hip_walking_backward_right":SubResource("a26"),"pistol_hip_walking_forward":SubResource("a27"),"pistol_hip_walking_forward_left":SubResource("a28"),"pistol_hip_walking_forward_right":SubResource("a29"),"pistol_hip_walking_left":SubResource("a30"),"pistol_hip_walking_right":SubResource("a31"),"pistol_jump":SubResource("a32"),"pistol_jump_fall":SubResource("a33"),"pistol_jump_land":SubResource("a34"),"rifle_ads_fire":SubResource("a35"),"rifle_ads_idle":SubResource("a36"),"rifle_ads_walking_backward":SubResource("a37"),"rifle_ads_walking_backward_left":SubResource("a38"),"rifle_ads_walking_backward_right":SubResource("a39"),"rifle_ads_walking_forward":SubResource("a40"),"rifle_ads_walking_forward_left":SubResource("a41"),"rifle_ads_walking_forward_right":SubResource("a42"),"rifle_ads_walking_left":SubResource("a43"),"rifle_ads_walking_right":SubResource("a44"),"rifle_hip_fire":SubResource("a45"),"rifle_hip_idle":SubResource("a46"),"rifle_hip_running_backward":SubResource("a47"),"rifle_hip_running_backward_left":SubResource("a48"),"rifle_hip_running_backward_right":SubResource("a49"),"rifle_hip_running_forward":SubResource("a50"),"rifle_hip_running_forward_left":SubResource("a51"),"rifle_hip_running_forward_right":SubResource("a52"),"rifle_hip_running_left":SubResource("a53"),"rifle_hip_running_right":SubResource("a54"),"rifle_hip_walking_backward":SubResource("a55"),"rifle_hip_walking_backward_left":SubResource("a56"),"rifle_hip_walking_backward_right":SubResource("a57"),"rifle_hip_walking_forward":SubResource("a58"),"rifle_hip_walking_forward_left":SubResource("a59"),"rifle_hip_walking_forward_right":SubResource("a60"),"rifle_hip_walking_left":SubResource("a61"),"rifle_hip_walking_right":SubResource("a62"),"rifle_jump":SubResource("a63"),"rifle_jump_idle":SubResource("a64"),"rifle_jump_land":SubResource("a65"),"running_backward":SubResource("a66"),"running_backward_left":SubResource("a67"),"running_backward_right":SubResource("a68"),"running_forward":SubResource("a69"),"running_forward_left":SubResource("a70"),"running_forward_right":SubResource("a71"),"running_left":SubResource("a72"),"running_right":SubResource("a73"),"sit_01":SubResource("a74"),"standing_idle":SubResource("a75"),"walking_backward":SubResource("a76"),"walking_backward_left":SubResource("a77"),"walking_backward_right":SubResource("a78"),"walking_forward":SubResource("a79"),"walking_forward_left":SubResource("a80"),"walking_forward_right":SubResource("a81"),"walking_left":SubResource("a82"),"walking_right":SubResource("a83")}

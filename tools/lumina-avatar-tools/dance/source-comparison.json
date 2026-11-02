@@ -1,0 +1,82 @@
+{
+  "max_degrees": 0.0,
+  "comparisons": 228,
+  "bake_ms": {
+    "actual": 79,
+    "canonical": 88
+  },
+  "worst": [
+    {
+      "target": "actual",
+      "time": 0,
+      "bone": "Hips",
+      "degrees": 0.0
+    },
+    {
+      "target": "actual",
+      "time": 0,
+      "bone": "Spine",
+      "degrees": 0.0
+    },
+    {
+      "target": "actual",
+      "time": 0,
+      "bone": "Spine1",
+      "degrees": 0.0
+    },
+    {
+      "target": "actual",
+      "time": 0,
+      "bone": "Spine2",
+      "degrees": 0.0
+    },
+    {
+      "target": "actual",
+      "time": 0,
+      "bone": "Neck",
+      "degrees": 0.0
+    },
+    {
+      "target": "actual",
+      "time": 0,
+      "bone": "LeftShoulder",
+      "degrees": 0.0
+    },
+    {
+      "target": "actual",
+      "time": 0,
+      "bone": "LeftArm",
+      "degrees": 0.0
+    },
+    {
+      "target": "actual",
+      "time": 0,
+      "bone": "LeftForeArm",
+      "degrees": 0.0
+    },
+    {
+      "target": "actual",
+      "time": 0,
+      "bone": "LeftHand",
+      "degrees": 0.0
+    },
+    {
+      "target": "actual",
+      "time": 0,
+      "bone": "LeftUpLeg",
+      "degrees": 0.0
+    },
+    {
+      "target": "actual",
+      "time": 0,
+      "bone": "LeftLeg",
+      "degrees": 0.0
+    },
+    {
+      "target": "actual",
+      "time": 0,
+      "bone": "LeftFoot",
+      "degrees": 0.0
+    }
+  ]
+}

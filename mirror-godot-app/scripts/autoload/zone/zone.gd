@@ -29,6 +29,7 @@ enum DENIED_REASON {
 	CLIENT_VERSION_MISMATCH,
 	USER_ID_IN_USE,
 	KICKED_OUT_OF_SPACE,
+	AUTHENTICATION_FAILED,
 }
 
 @onready var social_manager: SocialManager = $SocialManager

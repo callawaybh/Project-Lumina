@@ -1,0 +1,11 @@
+config_version=5
+[application]
+config/name="Lumina dance isolated regression"
+run/main_scene="res://test.tscn"
+[autoload]
+Zone="*res://zone.gd"
+GameUI="*res://game_ui.gd"
+PlayerData="*res://player_data.gd"
+Net="*res://net.gd"
+[rendering]
+renderer/rendering_method="gl_compatibility"

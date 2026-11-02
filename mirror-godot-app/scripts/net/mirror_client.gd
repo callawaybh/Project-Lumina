@@ -139,7 +139,7 @@ func _make_request(request_data: Dictionary) -> HTTPRequest:
 			push_error("WSS Token is empty, required in server context for http requests")
 		headers = _get_headers(token)
 	else:
-		headers = _get_headers(Firebase.Auth.get_jwt())
+		headers = _get_headers(Net.get_auth_token())
 	var raw_request = false
 	if body is Dictionary:
 		body = "" if body.is_empty() else JSON.stringify(body)

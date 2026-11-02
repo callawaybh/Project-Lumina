@@ -85,7 +85,7 @@ func _dispatch(request: Dictionary) -> Dictionary:
 		return {"ok": true, "space_id": Zone.space.get("_id", ""),
 			"space_name": Zone.space.get("name", ""), "ready": Zone.space_ready,
 			"edit_mode": Zone.is_in_edit_mode(), "user_id": Net.user_id,
-			"player_position": player_position}
+			"player_position": player_position, "capabilities": ["delete_objects", "static_primitives", "world_bounds", "prepared_models", "club_environment", "inspect_object"]}
 	if action == "join_space":
 		var space_id: String = str(request.get("space_id", ""))
 		if Net.user_id.is_empty() or space_id.length() != 24 or not space_id.is_valid_hex_number(false):
@@ -104,12 +104,26 @@ func _dispatch(request: Dictionary) -> Dictionary:
 					"name": object.get_space_object_name(), "position": Serialization.vector3_to_array(object.position),
 					"rotation": Serialization.vector3_to_array(object.rotation),
 					"scale": Serialization.vector3_to_array(object.get_model_scale()),
-					"asset_id": object.get_space_object_asset_id()})
+					"asset_id": object.get_space_object_asset_id(),
+					"body_type": object.physics_body_type, "collision_enabled": object.collision_enabled,
+					"bounds": _world_bounds(object)})
 		return {"ok": true, "objects": objects}
 	if action == "list_groups":
 		return await _load_groups()
 	if Util.get_role_for_user(Zone.space, Net.user_id) < Enums.ROLE.CONTRIBUTOR:
 		return {"ok": false, "error": "Current account cannot edit this Space"}
+	if action == "create_model":
+		return await _import_prepared_asset(request)
+	if action == "replace_model":
+		return await _import_prepared_asset(request, true)
+	if action == "create_audio":
+		return await _import_prepared_asset(request, false, true)
+	if action == "set_environment":
+		return await _set_club_environment(request)
+	if action == "inspect_object":
+		return _inspect_club_object(request)
+	if action == "delete_objects":
+		return await _delete_objects(request)
 	if action == "create_primitive":
 		return await _create(request)
 	if action == "update_object":
@@ -157,7 +171,7 @@ func _create(request: Dictionary) -> Dictionary:
 	var receipt_id: String = "lumina-" + str(request.get("id", Time.get_ticks_usec()))
 	var result: Dictionary = await _spawn({"asset": asset["_id"], "position": position,
 		"name": str(request.get("name", "Lumina Primitive")),
-		"rotation": [0, 0, 0], "scale": [1, 1, 1]}, receipt_id)
+		"rotation": [0, 0, 0], "scale": [1, 1, 1], "bodyType": "Static", "collisionEnabled": true}, receipt_id)
 	if result.get("ok", false):
 		_remember_primitive(result.object_id, request)
 	result["asset_id"] = asset["_id"]
@@ -297,7 +311,7 @@ func _confirm_saved(object_id: String, expected: Dictionary) -> Dictionary:
 			var value = actual.get(key)
 			if value is Dictionary:
 				value = value.get("_id", value)
-			if value != expected[key]:
+			if not _saved_value_matches(value, expected[key]):
 				matches = false
 		if matches:
 			return {"ok": true, "state": "saved"}
@@ -444,3 +458,214 @@ func _group_command(request: Dictionary) -> Dictionary:
 		if not saved.ok:
 			return {"ok": false, "error": "Copies created, but group metadata could not be saved", "completed": completed, "detail": saved}
 	return {"ok": true, "state": "saved", "group_id": group_id, "completed": completed}
+
+
+func _world_bounds(object: Node3D) -> Dictionary:
+	var boxes: Array[AABB] = []
+	_collect_bounds(object, boxes)
+	if boxes.is_empty(): return {}
+	var box: AABB = boxes[0]
+	for i in range(1, boxes.size()): box = box.merge(boxes[i])
+	return {"position": Serialization.vector3_to_array(box.position), "size": Serialization.vector3_to_array(box.size)}
+
+func _collect_bounds(node: Node, boxes: Array[AABB]) -> void:
+	if node is MeshInstance3D and node.mesh != null:
+		boxes.append(node.global_transform * node.get_aabb())
+	for child in node.get_children(): _collect_bounds(child, boxes)
+
+func _validate_deletion_request(request: Dictionary, space_id: String) -> Dictionary:
+	if request.get("space_id", "") != space_id:
+		return {"ok": false, "error": "Expected Space ID does not match current Space"}
+	var ids = request.get("object_ids", [])
+	if not ids is Array or ids.is_empty() or ids.size() > 32:
+		return {"ok": false, "error": "Provide 1 to 32 explicit object IDs"}
+	var seen = {}
+	for id in ids:
+		if not id is String or id.length() != 24 or not id.is_valid_hex_number(false) or seen.has(id):
+			return {"ok": false, "error": "Object IDs must be unique 24-character hex strings"}
+		seen[id] = true
+	return {"ok": true}
+
+func _delete_objects(request: Dictionary) -> Dictionary:
+	var valid = _validate_deletion_request(request, str(Zone.space.get("_id", "")))
+	if not valid.ok: return valid
+	var ids: Array = request.object_ids
+	var snapshot: Array = []
+	var delete_ids: Array[StringName] = []
+	for id in ids:
+		var target = _object(id)
+		if target == null or not Util.can_edit_object_in_space(target):
+			return {"ok": false, "error": "Missing or uneditable object: " + id}
+		# Ground maps must never be swept up by test-object cleanup.
+		if target.get_space_object_name().begins_with("Map "):
+			return {"ok": false, "error": "Map objects are protected from this cleanup command"}
+		snapshot.append(target.space_object_data.duplicate(true))
+		delete_ids.append(StringName(id))
+	var loaded: Dictionary = await _load_groups()
+	if not loaded.ok: return loaded
+	var backup_path: String = DIR + "deletion-backup-" + str(request.id) + ".json"
+	var file = FileAccess.open(backup_path, FileAccess.WRITE)
+	if file == null: return {"ok": false, "error": "Could not save pre-deletion snapshot"}
+	file.store_string(JSON.stringify({"space_id": request.space_id, "objects": snapshot, "groups": loaded.groups}))
+	file.close()
+	Zone.send_data_to_server([Packet.TYPE.DELETE_SPACE_OBJECTS, delete_ids])
+	var deadline: int = Time.get_ticks_msec() + 25000
+	while Time.get_ticks_msec() < deadline:
+		var promise = Net.space_client.get_space_objects(request.space_id)
+		await promise.wait_till_fulfilled()
+		if promise.is_error():
+			return {"ok": false, "error": "Delete submitted; verification failed. Inspect before retrying.", "backup": backup_path}
+		var remaining: Array = []
+		for item in promise.get_result():
+			if ids.has(str(item.get("_id", ""))): remaining.append(item.get("_id"))
+		for id in ids:
+			if _object(id) != null and not remaining.has(id): remaining.append(id)
+		if remaining.is_empty():
+			var groups: Dictionary = loaded.groups
+			for group_id in groups.keys():
+				var kept: Array = []
+				for member in groups[group_id].object_ids:
+					if not ids.has(member): kept.append(member)
+				if kept.is_empty(): groups.erase(group_id)
+				else: groups[group_id].object_ids = kept
+			var saved: Dictionary = await _save_groups(groups)
+			return {"ok": saved.ok, "state": "deleted", "deleted_ids": ids, "groups_saved": saved.ok, "backup": backup_path}
+		await get_tree().create_timer(.25).timeout
+	return {"ok": false, "error": "Delete submitted; verification timed out. Inspect before retrying.", "backup": backup_path}
+
+func _checked_asset_path(request: Dictionary, audio := false) -> Dictionary:
+	if request.get("space_id", "") != str(Zone.space.get("_id", "")):
+		return {"ok": false, "error": "Expected Space ID does not match current Space"}
+	var filename = request.get("file", "")
+	if not filename is String or filename.is_empty() or filename != filename.get_file():
+		return {"ok": false, "error": "Provide a model-directory filename, without a path"}
+	if filename.get_extension().to_lower() != ("wav" if audio else "glb"):
+		return {"ok": false, "error": "Expected WAV audio or GLB model"}
+	var path: String = DIR + "models/" + filename
+	if not FileAccess.file_exists(path):
+		return {"ok": false, "error": "Prepared asset file not found"}
+	var file = FileAccess.open(path, FileAccess.READ)
+	var length = file.get_length()
+	if length < 16 or length >= 15 * 1024 * 1024:
+		return {"ok": false, "error": "Asset must be between 16 bytes and 15 MiB"}
+	if not audio and (file.get_32() != 0x46546C67 or file.get_32() != 2 or file.get_32() != length):
+		return {"ok": false, "error": "Invalid GLB header"}
+	return {"ok": true, "path": path}
+
+func _import_prepared_asset(request: Dictionary, replace := false, audio := false) -> Dictionary:
+	var checked = _checked_asset_path(request, audio)
+	if not checked.ok: return checked
+	var position = request.get("position", [])
+	var rotation = request.get("rotation", [0, 0, 0])
+	var name = request.get("name", "")
+	var target = null
+	if replace:
+		target = _object(str(request.get("object_id", "")))
+		if target == null or not Util.can_edit_object_in_space(target):
+			return {"ok": false, "error": "Model replacement requires an editable object in current Space"}
+	else:
+		if not _vector(position, 3) or not _vector(rotation, 3) or not _valid_name(name):
+			return {"ok": false, "error": "Expected finite position/rotation and a valid name"}
+	if request.has("collision_enabled") and not request.collision_enabled is bool:
+		return {"ok": false, "error": "collision_enabled must be a boolean"}
+	var promise = await GameUI.instance.creator_ui.asset_browser.create_asset_from_url(checked.path)
+	if promise.is_error(): return {"ok": false, "error": promise.get_error_message()}
+	var asset: Dictionary = promise.get_result()
+	var result: Dictionary
+	if replace:
+		var id: String = str(request.object_id)
+		var delta: Dictionary = {"_id": id, "asset": asset["_id"]}
+		Zone.instance_manager.update_space_object(delta)
+		Zone.send_data_to_server([Packet.TYPE.UPDATE_SPACE_OBJECT, delta])
+		result = await _confirm_saved(id, delta)
+		result["object_id"] = id
+	else:
+		var properties: Dictionary = {"asset": asset["_id"], "position": position, "rotation": rotation,
+			"scale": [1, 1, 1], "name": name, "bodyType": "Static", "collisionEnabled": request.get("collision_enabled", true)}
+		if audio:
+			properties.merge({"collisionEnabled": false, "audioAutoPlay": true, "audioLoop": true,
+				"audioIsSpatial": false, "audioPitch": 100.0, "audioBaseVolume": 18.0}, true)
+		result = await _spawn(properties, "lumina-" + str(request.id))
+	result["asset_id"] = asset["_id"]
+	return result
+
+func _set_club_environment(request: Dictionary) -> Dictionary:
+	if request.get("space_id", "") != str(Zone.space.get("_id", "")):
+		return {"ok": false, "error": "Expected Space ID does not match current Space"}
+	var changes = request.get("changes", {})
+	if not changes is Dictionary or changes.is_empty():
+		return {"ok": false, "error": "Environment changes required"}
+	for key in changes:
+		var value = changes[key]
+		if key in ["skyTopColor", "skyHorizonColor", "skyBottomColor", "fogColor"]:
+			if not _vector(value, 3): return {"ok": false, "error": "Invalid environment color"}
+			for c in value:
+				if c < 0 or c > 1: return {"ok": false, "error": "Environment colors must be 0 to 1"}
+		elif key in ["fogEnabled", "fogVolumetric", "globalIllumination", "ssao", "ssr", "glow"]:
+			if not value is bool: return {"ok": false, "error": "Environment switch must be boolean"}
+		elif key in ["glowHdrThreshold", "fogDensity"]:
+			if not (value is int or value is float) or not is_finite(float(value)) or value < 0 or value > 2:
+				return {"ok": false, "error": "Invalid environment intensity"}
+		elif key == "sunCount":
+			if value != 0: return {"ok": false, "error": "Club preset supports zero suns only"}
+		elif key == "suns":
+			if not value is Array or not value.is_empty(): return {"ok": false, "error": "Club preset requires empty suns"}
+		else: return {"ok": false, "error": "Unsupported environment field: " + str(key)}
+	if changes.has("sunCount") != changes.has("suns"):
+		return {"ok": false, "error": "Provide sunCount and suns together"}
+	var backup_path: String = DIR + "environment-backup-" + str(request.id) + ".json"
+	var backup = FileAccess.open(backup_path, FileAccess.WRITE)
+	backup.store_string(JSON.stringify(Zone.space.get("environment", {})))
+	backup.close()
+	Zone.send_data_to_server([Packet.TYPE.ENVIRONMENT_CHANGE, changes])
+	var deadline = Time.get_ticks_msec() + 20000
+	while Time.get_ticks_msec() < deadline:
+		var promise = Net.space_client.get_space(str(Zone.space["_id"]))
+		await promise.wait_till_fulfilled()
+		if promise.is_error(): return {"ok": false, "error": promise.get_error_message()}
+		var environment: Dictionary = promise.get_result().get("environment", {})
+		var matches = true
+		for key in changes:
+			if environment.get(key) != changes[key]: matches = false
+		if matches: return {"ok": true, "state": "saved", "backup": backup_path}
+		await get_tree().create_timer(0.25).timeout
+	return {"ok": false, "error": "Environment submitted; saved verification timed out, inspect before retry"}
+
+func _inspect_club_object(request: Dictionary) -> Dictionary:
+	var target = _object(str(request.get("object_id", "")))
+	if target == null: return {"ok": false, "error": "Object not found in current Space"}
+	var result: Dictionary = {"ok": true, "object_id": str(request.object_id), "meshes": 0, "emissive_surfaces": 0, "lights": [], "seats": 0}
+	_inspect_club_nodes(target.scaled_model, result)
+	result["body_type"] = target.physics_body_type
+	result["collision_enabled"] = target.collision_enabled
+	result["bounds"] = _world_bounds(target)
+	return result
+
+func _inspect_club_nodes(node: Node, result: Dictionary) -> void:
+	if node.has_meta(&"OMI_seat"): result.seats += 1
+	if str(node.name) == "LuminaClubEffects":
+		result["club_effects"] = {"version": 1, "moving_spots": node.spots.size(), "laser_fans": node.laser_fans.size(), "smoke_emitters": node.smoke.size(), "collision_bodies": 0}
+	if node is CPUParticles3D:
+		if not result.has("particles"): result["particles"] = []
+		result.particles.append({"name": str(node.name), "amount": node.amount, "emitting": node.emitting, "lifetime": node.lifetime})
+	if node is Light3D:
+		result.lights.append({"name": str(node.name), "energy": node.light_energy, "shadow": node.shadow_enabled, "range": node.omni_range if node is OmniLight3D else 0.0})
+	if node is MeshInstance3D and node.mesh != null:
+		result.meshes += 1
+		for i in range(node.mesh.get_surface_count()):
+			var material = node.get_active_material(i)
+			if material is BaseMaterial3D and material.emission_enabled:
+				result.emissive_surfaces += 1
+	for child in node.get_children(): _inspect_club_nodes(child, result)
+
+# Native JSON serialization may round an angle by a few decimal places.
+# Keep IDs/strings exact and accept only tiny finite numeric differences.
+func _saved_value_matches(actual, expected) -> bool:
+	if (actual is int or actual is float) and (expected is int or expected is float):
+		return is_finite(float(actual)) and is_finite(float(expected)) and abs(float(actual) - float(expected)) <= 0.00001
+	if actual is Array and expected is Array:
+		if actual.size() != expected.size(): return false
+		for i in range(actual.size()):
+			if not _saved_value_matches(actual[i], expected[i]): return false
+		return true
+	return actual == expected

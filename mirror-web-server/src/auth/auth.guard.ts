@@ -85,11 +85,11 @@ export class AuthGuardFirebase implements CanActivate {
           if (logToken === process.env.WSS_SECRET) {
             logToken = '<reacted WSS_SECRET>'
           }
-          this.logger.error('JWT: ' + logToken)
+          this.logger.error('Rejected bearer credential (redacted)')
         }
         throw new MethodNotAllowedException('Invalid JWT')
       } else {
-        this.logger.error('JWT:', token)
+        this.logger.error('Rejected bearer credential (redacted)')
       }
       this.logger.log('AuthGuardFirebase: error decoding jwt, returning false')
       return false

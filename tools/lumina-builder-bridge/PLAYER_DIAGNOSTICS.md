@@ -30,3 +30,10 @@ Useful first-failure stages:
 Validation: full Godot script scan, isolated production-guard test (including
 expected exit code 2, one-report behavior and non-local bypass), and 150 valid
 spawn trials. The real intermittently failing session must still be observed.
+
+November 1 follow-up: a new captured first-native-step NaN and an earlier report
+led to an uninitialized native impulse accumulator. The initializer is now
+fixed in source and the tested rebuilt executable is installed. Old/new isolated
+comparison reproduced inherited impulse state only on the old executable.
+See `docs/diagnostics/PHYSICS_FIRST_STEP_2026-11-01.md`. Keep the guard enabled;
+the user's live restart/re-entry remains necessary before claiming resolution.

@@ -1,0 +1,20 @@
+{
+  "file": "club_effects_v1.glb",
+  "bounds": {
+    "position": [
+      -5.75,
+      0.010000000000000009,
+      -10.225000000000001
+    ],
+    "size": [
+      11.5,
+      6.715,
+      14.450000000000001
+    ]
+  },
+  "meshes": 1,
+  "emissive_surfaces": 0,
+  "seats": 0,
+  "lights": 0,
+  "bytes": 15876
+}

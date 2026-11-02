@@ -112,7 +112,10 @@ func _make_request(request_data: Dictionary) -> HTTPRequest:
 	var is_external = not request_data["use_base"]
 	var base_url: String = _get_base_url() if not is_external else ""
 	var url: String = base_url + request_data["url"]
+	if is_external and request_data.has("local_download_url"):
+		url = str(request_data.local_download_url)
 	var http: HTTPRequest = HTTPRequest.new()
+	http.timeout = request_data.get("timeout", 0.0)
 	http.use_threads = not GameplaySettings.force_single_threaded_mode
 	add_child(http)
 	var body = request_data["request_body"]
@@ -130,7 +133,7 @@ func _make_request(request_data: Dictionary) -> HTTPRequest:
 			push_error("WSS Token is empty, required in server context for http requests")
 		headers = _get_headers(token)
 	else:
-		headers = _get_headers(Firebase.Auth.get_jwt())
+		headers = _get_headers(Net.get_auth_token())
 	var raw_request = false
 
 	# HTTP requires we send an empty body length when there is no body

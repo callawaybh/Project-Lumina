@@ -52,6 +52,8 @@ var _running: bool = false
 var _grounded: bool = true
 var _sitting: bool = false
 var _dead: bool = false
+var _dance_active: bool = false
+var _dance_elapsed: float = 0.0
 var _look_target: Vector3 = Vector3.ZERO
 var _is_aiming: bool = false
 
@@ -172,15 +174,20 @@ func advance_animation_to_position(position: float) -> void:
 func _set_animation(delta: float) -> void:
 	var request: String = "parameters/Stance/transition_request"
 	var current_state: String = _animation_tree.get("parameters/Stance/current_state")
-	var state_machine: AnimationNodeStateMachinePlayback = _animation_tree.get("parameters/%s/Main_State/playback" % [current_state])
 	if _sitting:
 		_animation_tree.set(request, "Sitting")
 		return
 	if _dead:
 		_animation_tree.set(request, "Dead")
 		return
+	if _dance_active and _grounded and not _sitting and not _dead:
+		_animation_tree.set(request, "Dance")
+		_animation_tree.set("parameters/DanceSeek/seek_request", LuminaDance.playback_position(_dance_elapsed))
+		return
 	if current_state != stance:
 		_animation_tree.set(request, stance)
+		current_state = stance
+	var state_machine: AnimationNodeStateMachinePlayback = _animation_tree.get("parameters/%s/Main_State/playback" % [current_state])
 	if current_state != "Sitting" and current_state != "Dead":
 		if _grounded:
 			if not _running:
@@ -209,6 +216,7 @@ func _set_animation(delta: float) -> void:
 
 
 func _set_head_look() -> void:
+	if _dance_active and not _sitting and not _dead: return
 	var pose_strength: float = 1.0
 	if (stance != STANCE.UNARMED and not _sitting) or _player.damage_handler.get_health() <= 0.0:
 		pose_strength = 0.0
@@ -355,6 +363,14 @@ func set_avatar_with_node(new_avatar: Node) -> void:
 	_adjust_model_height()
 	_set_shadow_mode(_shadow_cast_mode)
 	_animation_player.set_root(_avatar.get_path())
+	# Each avatar needs a separate library; shared resources would alter other players.
+	if is_instance_valid(_skeleton) and _skeleton.find_bone("Hips") >= 0:
+		var dance_library := AnimationLibrary.new()
+		dance_library.add_animation(&"dance_twerk", preload("res://player/animations/dances/dance_retarget.gd").animation_for(_skeleton))
+		if _animation_player.has_animation_library(&"lumina_emotes"):
+			_animation_player.remove_animation_library(&"lumina_emotes")
+		_animation_player.add_animation_library(&"lumina_emotes", dance_library)
+		_animation_tree.clear_caches()
 	_animation_tree.set_active(true)
 	_animation_tree.set("parameters/Stance/transition_request", "Unarmed")
 	_animation_tree.get("parameters/Unarmed/Main_State/playback").travel("Walking")
@@ -579,3 +595,8 @@ func _on_left_foot_step(dir: Vector2) -> void:
 
 func _on_right_foot_step(dir: Vector2) -> void:
 	_calculate_footstep_event(dir, 1)
+
+
+func set_dance_state(active: bool, elapsed: float) -> void:
+	_dance_active = active and is_finite(elapsed)
+	_dance_elapsed = maxf(elapsed, 0.0) if is_finite(elapsed) else 0.0

@@ -109,14 +109,10 @@ func start_server() -> bool:
 	_server_data_received = false
 	var error: Error = server_peer.create_server(port, 64)
 	if error != OK:
-		# TODO: Godot only allows defining command line arguments for all
-		# instances, so all of them try to be the server. Ignore the can't
-		# create error for now. In the future, define per-instance arguments
-		# so that only one instance tries to be the server.
-		if error != ERR_CANT_CREATE:
-			printerr("FAILED to start server! Error code: " + str(error))
-			push_error("FAILED to start server! Error code: " + str(error))
+		printerr("FAILED to bind game port %d: %s" % [port, error_string(error)])
 		server_peer = null
+		if not Util.get_commandline_id_val("local_host_ticket").is_empty():
+			get_tree().quit(2)
 		return false
 	Zone.server_host = true
 	# note: GDScript cannot understand Zone definition unless passed via a variable in the stack.
@@ -136,6 +132,13 @@ func start_server() -> bool:
 		_setup_edit_server()
 	Net.zone_socket.init_ws_client()
 	print("SUCCESS Starting Mirror Megaverse Server! Listening on port: " + str(port))
+	var ticket: String = Util.get_commandline_id_val("local_host_ticket")
+	if not ticket.is_empty():
+		var startup = preload("res://scripts/net/local_host_startup.gd")
+		if not startup.report_bound(ticket, OS.get_process_id(), space_id, port):
+			printerr("Could not confirm local host startup")
+			get_tree().quit(2)
+			return false
 	return true
 
 
@@ -536,7 +539,10 @@ func _all_files_downloaded() -> bool:
 func _init_player(peer_id, jwt, client_version) -> void:
 	# TODO: This only decodes the JWT, but it needs to validated via Firebase SDK (probs via the NestJS server for ease)
 	# TODO: Kick the player if JWT validating fails
-	var user_id = JWT.get_user_id_from_jwt(jwt, "test123")
+	var user_id = Net.get_user_id_from_auth_token(jwt)
+	if user_id.is_empty():
+		Zone.client_access_denied(peer_id, Zone.DENIED_REASON.AUTHENTICATION_FAILED)
+		return
 	if not _server_is_ready(true):
 		push_error("Server not ready for players to join")
 		Zone.client_access_denied(peer_id, Zone.DENIED_REASON.SERVER_WARMING_UP)

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import * as admin from 'firebase-admin'
 import { Inject } from '@nestjs/common'
 import * as jwt from 'jsonwebtoken'
+import { decodeLocalDevelopmentToken } from '../auth/local-development-session'
 
 @Injectable()
 export class FirebaseAuthenticationService {
@@ -81,7 +82,8 @@ export class FirebaseAuthenticationService {
     checkRevoked?: boolean
   ): Promise<admin.auth.DecodedIdToken> {
     try {
-      return await this.firebase.auth().verifyIdToken(idToken, checkRevoked)
+      return decodeLocalDevelopmentToken(idToken) ||
+        await this.firebase.auth().verifyIdToken(idToken, checkRevoked)
     } catch (error) {
       throw error
     }

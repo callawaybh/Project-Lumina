@@ -22,3 +22,12 @@ node_modules
 __pycache__/
 *.pyc
 /mirror-web-server/localStorage/
+
+# Private local build/session records and generated validation output
+/docs/nightclub/BUILD_STATE.json
+/docs/nightclub/BUILD_LOG.md
+/docs/nightclub/MULTIPLAYER_STATE.json
+/tools/lumina-builder-bridge/nightclub/receipts/
+/tools/lumina-builder-bridge/nightclub/effects/*.log
+**/Lumina-Guest-Windows/
+**/Lumina-Guest-Windows.zip

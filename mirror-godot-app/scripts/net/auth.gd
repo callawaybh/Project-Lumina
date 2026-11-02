@@ -8,7 +8,7 @@ enum {
 
 
 func create_account_if_missing() -> Promise:
-	return self.post_request(POST_AUTH_USER_CREATE, "/auth/auth-user-create", {})
+	return self.post_request(POST_AUTH_USER_CREATE, "/auth/auth-user-create", {}, {"timeout": 15.0} if Net.is_local_development_auth() else {})
 
 
 func check_login_code(login_code: String) -> Promise:

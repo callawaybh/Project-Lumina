@@ -1,0 +1,63 @@
+diff --git a/modules/the_mirror/physics/tm_character_3d.h b/modules/the_mirror/physics/tm_character_3d.h
+index 330adab2e4..d7caeaa39e 100644
+--- a/modules/the_mirror/physics/tm_character_3d.h
++++ b/modules/the_mirror/physics/tm_character_3d.h
+@@ -56,7 +56,7 @@ class TMCharacter3D : public JBody3D {
+ 	bool cached_is_running = false;
+ 
+ 	LocalVector<PendingInteraction> pending_interactions;
+-	JPH::Vec3 accumulated_impulses;
++	JPH::Vec3 accumulated_impulses = JPH::Vec3::sZero();
+ 
+ public:
+ 	NS::ObjectData *object_data = nullptr;
+diff --git a/modules/the_mirror/physics/tm_scene_sync.cpp b/modules/the_mirror/physics/tm_scene_sync.cpp
+index 771b101c32..f5c1b3a691 100644
+--- a/modules/the_mirror/physics/tm_scene_sync.cpp
++++ b/modules/the_mirror/physics/tm_scene_sync.cpp
+@@ -220,6 +220,18 @@ void TMSceneSync::register_controller(int p_peer, Vector<Variant> p_controller_n
+ 	character->objects_data = all_controlled_nodes;
+ }
+ 
++void TMSceneSync::setup_synchronizer_for(NS::ObjectHandle p_app_object_handle, NS::ObjectLocalId p_id) {
++	if (p_app_object_handle == scene_synchronizer.to_handle(this)) {
++		// The coordinator is registered to run process_jolt_physics in the POST
++		// phase, not to expose GDScript properties. on_init_synchronizer installs
++		// that process; contact snapshots use snapshot_get/set_custom_data.
++		// Keep the normal setup contract for every other registered object.
++		return;
++	}
++
++	GdSceneSynchronizer::setup_synchronizer_for(p_app_object_handle, p_id);
++}
++
+ void TMSceneSync::on_init_synchronizer(bool p_was_generating_ids) {
+ 	GdSceneSynchronizer::on_init_synchronizer(p_was_generating_ids);
+ 
+diff --git a/modules/the_mirror/physics/tm_scene_sync.h b/modules/the_mirror/physics/tm_scene_sync.h
+index 99ed06d932..468ae3744d 100644
+--- a/modules/the_mirror/physics/tm_scene_sync.h
++++ b/modules/the_mirror/physics/tm_scene_sync.h
+@@ -77,6 +77,8 @@ public:
+ 
+ 	void register_controller(int p_peer, Vector<Variant> p_controller_nodes);
+ 
++	virtual void setup_synchronizer_for(NS::ObjectHandle p_app_object_handle, NS::ObjectLocalId p_id) override;
++
+ 	virtual void on_init_synchronizer(bool p_was_generating_ids) override;
+ 	virtual void on_uninit_synchronizer() override;
+ 
+diff --git a/modules/the_mirror/register_types.cpp b/modules/the_mirror/register_types.cpp
+index 1f04ca7fff..a15d60dc08 100644
+--- a/modules/the_mirror/register_types.cpp
++++ b/modules/the_mirror/register_types.cpp
+@@ -46,6 +46,9 @@ void initialize_the_mirror_module(ModuleInitializationLevel p_level) {
+ 		Engine::get_singleton()->add_singleton(
+ 				Engine::Singleton("CollisionFxManager", CollisionFxManager::get_singleton()));
+ 
++	} else if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
++		// Node's automatic child-name counter is initialized by register_scene_types.
++		// Keep singleton creation at SERVERS, but attach only after that setup.
+ 		TMSceneSync::singleton()->add_child(CollisionFxManager::get_singleton());
+ 	}
+ }
